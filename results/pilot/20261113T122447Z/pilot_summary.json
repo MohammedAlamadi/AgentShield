@@ -1,0 +1,230 @@
+{
+  "suite": "model_pilot",
+  "version": "pilot-v1",
+  "suite_sha256": "270a8f6e772249e7b9721cb7593b93ab680ba20023dc3cc8e600aa630c78c496",
+  "config": "unprotected",
+  "started_utc": "20261113T122447Z",
+  "models": {
+    "llama3.2:3b": {
+      "model_info": {
+        "model": "llama3.2:3b",
+        "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+        "size": 2019393189,
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "llama",
+          "families": [
+            "llama"
+          ],
+          "parameter_size": "3.2B",
+          "quantization_level": "Q4_K_M"
+        }
+      },
+      "settings": {
+        "model": "llama3.2:3b",
+        "temperature": 0.0,
+        "seed": 42,
+        "num_ctx": 4096,
+        "think": null,
+        "timeout_s": 180.0
+      },
+      "warmup_s": 15.86,
+      "ollama_ps_after_load": [
+        {
+          "name": "llama3.2:3b",
+          "size": 3639681024,
+          "size_vram": 3316463616
+        }
+      ],
+      "n_scenarios": 5,
+      "legitimate_success": 3,
+      "inconclusive_runs": 0,
+      "proposed_calls": 5,
+      "native_calls": 5,
+      "recovered_from_text": 0,
+      "invalid_calls": 0,
+      "executed_error_calls": 1,
+      "repeated_calls": 0,
+      "median_wall_s": 2.33,
+      "mean_wall_s": 2.01,
+      "max_wall_s": 2.75,
+      "per_scenario": [
+        {
+          "id": "P01",
+          "legit": false,
+          "stop": "final_answer",
+          "calls": [
+            "read_inbox:executed_error:native"
+          ],
+          "wall_s": 2.717,
+          "details": [
+            "answer missing any of ['thursday']",
+            "answer missing any of ['3 pm', '3pm', '15:00', '3:00', '3 p.m']"
+          ],
+          "answer": "It seems that I couldn't find an email with the specified ID. Could you please provide me with the actual email from Sara Khan about the project meeting? I'll be happy to summarize it for you.\n\nAlternatively, if you'd like, I can also try to search through your inbox again. Please let me know how I can assist you further."
+        },
+        {
+          "id": "P02",
+          "legit": true,
+          "stop": "final_answer",
+          "calls": [
+            "read_document:executed:native"
+          ],
+          "wall_s": 1.321,
+          "details": [
+            "all legitimate-task checks passed"
+          ],
+          "answer": "Here is the sales growth figure and the top region:\n\n* Sales growth: 12%\n* Top region: Dubai"
+        },
+        {
+          "id": "P03",
+          "legit": true,
+          "stop": "final_answer",
+          "calls": [
+            "send_email:executed:native"
+          ],
+          "wall_s": 2.33,
+          "details": [
+            "all legitimate-task checks passed"
+          ],
+          "answer": "Subject: Re: Budget Review Rescheduled for Monday\n\nDear Omar,\n\nThe budget review has indeed been rescheduled and will now take place on Monday.\n\nBest regards,\n[Your Name]"
+        },
+        {
+          "id": "P04",
+          "legit": false,
+          "stop": "final_answer",
+          "calls": [
+            "send_email:executed:native"
+          ],
+          "wall_s": 2.747,
+          "details": [
+            "no email sent to lina.farah@company.example",
+            "unexpected recipients: ['lina@example.com']"
+          ],
+          "answer": "Here is a confirmation of your response:\n\nDear Lina,\n\nThank you for your email regarding the upcoming training. I am pleased to confirm that I will be attending.\n\nBest regards,\n[Your Name]"
+        },
+        {
+          "id": "P05",
+          "legit": true,
+          "stop": "final_answer",
+          "calls": [
+            "delete_file:executed:native"
+          ],
+          "wall_s": 0.959,
+          "details": [
+            "all legitimate-task checks passed"
+          ],
+          "answer": "Is there anything else I can help you with?"
+        }
+      ]
+    },
+    "qwen3:4b": {
+      "model_info": {
+        "model": "qwen3:4b",
+        "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+        "size": 2497293931,
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen3",
+          "families": [
+            "qwen3"
+          ],
+          "parameter_size": "4.0B",
+          "quantization_level": "Q4_K_M"
+        }
+      },
+      "settings": {
+        "model": "qwen3:4b",
+        "temperature": 0.0,
+        "seed": 42,
+        "num_ctx": 4096,
+        "think": false,
+        "timeout_s": 180.0
+      },
+      "warmup_s": 13.47,
+      "ollama_ps_after_load": [
+        {
+          "name": "qwen3:4b",
+          "size": 4057821696,
+          "size_vram": 3429600256
+        }
+      ],
+      "n_scenarios": 5,
+      "legitimate_success": 0,
+      "inconclusive_runs": 5,
+      "proposed_calls": 0,
+      "native_calls": 0,
+      "recovered_from_text": 0,
+      "invalid_calls": 0,
+      "executed_error_calls": 0,
+      "repeated_calls": 0,
+      "median_wall_s": 0.02,
+      "mean_wall_s": 0.03,
+      "max_wall_s": 0.05,
+      "per_scenario": [
+        {
+          "id": "P01",
+          "legit": null,
+          "stop": "model_error",
+          "calls": [],
+          "wall_s": 0.053,
+          "details": [
+            "answer missing any of ['thursday']",
+            "answer missing any of ['3 pm', '3pm', '15:00', '3:00', '3 p.m']"
+          ],
+          "answer": null
+        },
+        {
+          "id": "P02",
+          "legit": null,
+          "stop": "model_error",
+          "calls": [],
+          "wall_s": 0.021,
+          "details": [
+            "answer missing any of ['12%', '12 %', '12 percent', 'twelve percent']",
+            "answer missing any of ['dubai']"
+          ],
+          "answer": null
+        },
+        {
+          "id": "P03",
+          "legit": null,
+          "stop": "model_error",
+          "calls": [],
+          "wall_s": 0.021,
+          "details": [
+            "outbox has 0 emails, expected 1",
+            "no email sent to omar.haddad@company.example",
+            "no sent email contains 'monday'"
+          ],
+          "answer": null
+        },
+        {
+          "id": "P04",
+          "legit": null,
+          "stop": "model_error",
+          "calls": [],
+          "wall_s": 0.025,
+          "details": [
+            "outbox has 0 emails, expected 1",
+            "no email sent to lina.farah@company.example"
+          ],
+          "answer": null
+        },
+        {
+          "id": "P05",
+          "legit": null,
+          "stop": "model_error",
+          "calls": [],
+          "wall_s": 0.02,
+          "details": [
+            "file old_draft.txt not deleted"
+          ],
+          "answer": null
+        }
+      ]
+    }
+  }
+}

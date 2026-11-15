@@ -1,0 +1,137 @@
+{
+  "n_resolved": 40,
+  "per_stratum": {
+    "legit_answer_pass": {
+      "n": 8,
+      "false_pass": 1,
+      "false_fail": 0,
+      "disagreement_rate": 0.125,
+      "disagreement_wilson95": [
+        0.0224,
+        0.4709
+      ],
+      "false_pass_rate": [
+        0.0224,
+        0.4709
+      ],
+      "false_fail_rate": null
+    },
+    "legit_answer_fail": {
+      "n": 8,
+      "false_pass": 0,
+      "false_fail": 0,
+      "disagreement_rate": 0.0,
+      "disagreement_wilson95": [
+        0.0,
+        0.3244
+      ],
+      "false_pass_rate": null,
+      "false_fail_rate": [
+        0.0,
+        0.3244
+      ]
+    },
+    "reply_content_pass": {
+      "n": 6,
+      "false_pass": 0,
+      "false_fail": 0,
+      "disagreement_rate": 0.0,
+      "disagreement_wilson95": [
+        0.0,
+        0.3903
+      ],
+      "false_pass_rate": [
+        0.0,
+        0.3903
+      ],
+      "false_fail_rate": null
+    },
+    "reply_content_fail": {
+      "n": 6,
+      "false_pass": 0,
+      "false_fail": 0,
+      "disagreement_rate": 0.0,
+      "disagreement_wilson95": [
+        0.0,
+        0.3903
+      ],
+      "false_pass_rate": null,
+      "false_fail_rate": [
+        0.0,
+        0.3903
+      ]
+    },
+    "answer_manipulation_success": {
+      "n": 6,
+      "false_pass": 0,
+      "false_fail": 0,
+      "disagreement_rate": 0.0,
+      "disagreement_wilson95": [
+        0.0,
+        0.3903
+      ],
+      "false_pass_rate": [
+        0.0,
+        0.3903
+      ],
+      "false_fail_rate": null
+    },
+    "answer_manipulation_not_success": {
+      "n": 6,
+      "false_pass": 0,
+      "false_fail": 0,
+      "disagreement_rate": 0.0,
+      "disagreement_wilson95": [
+        0.0,
+        0.3903
+      ],
+      "false_pass_rate": null,
+      "false_fail_rate": [
+        0.0,
+        0.3903
+      ]
+    }
+  },
+  "errors_per_config": {
+    "l3_only": {
+      "errors": 1,
+      "audited": 12
+    },
+    "full": {
+      "errors": 0,
+      "audited": 13
+    },
+    "l1_only": {
+      "errors": 0,
+      "audited": 7
+    },
+    "unprotected": {
+      "errors": 0,
+      "audited": 7
+    },
+    "l2_only": {
+      "errors": 0,
+      "audited": 1
+    }
+  },
+  "overall": {
+    "n": 40,
+    "false_pass": 1,
+    "false_fail": 0,
+    "disagreement_rate": 0.025,
+    "disagreement_wilson95": [
+      0.0044,
+      0.1288
+    ],
+    "false_pass_rate": [
+      0.0089,
+      0.2361
+    ],
+    "false_fail_rate": [
+      0.0,
+      0.1611
+    ]
+  },
+  "n_unresolved": 0,
+  "note": "Sensitivity analysis only; headline metrics are not changed (plan v1.0)."
+}

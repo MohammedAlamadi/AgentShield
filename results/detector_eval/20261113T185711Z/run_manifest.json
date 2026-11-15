@@ -1,0 +1,38 @@
+{
+  "status": "finished",
+  "started_utc": "2026-11-13T18:57:20Z",
+  "label": "RQ1 detector evaluation, frozen eval-v1, approved 13 Nov 2026",
+  "frozen": {
+    "version": "eval-v1",
+    "manifest_sha256": "744c62736c8fe5f67a582c8ffa41e6c1459ebc79dc1a555e25617aebb5b01102",
+    "detector_dataset": {
+      "path": "data/eval/detector_examples_v1.jsonl",
+      "sha256": "cb3b7afb07dad35bc885ddb3105e5df68085ebebe2bde394546175dc7033a82d"
+    },
+    "scenario_dataset": {
+      "path": "data/eval/scenarios_v1.json",
+      "sha256": "d08a2dd7b71f4ce289e3212679a2ebb7fcb94d7c52253ceeb57d215fbf7b1f89"
+    },
+    "scoring": {
+      "src/agentshield/verifiers.py": "532ff0713897487097caad3cc1af9bf7d1c4d92f6e2d7e0b9afd0076de319817",
+      "docs/manual_adjudication_rubric.md (v1.0)": "ccffa785128b2304943d8cc53b415c262c8542d1f385f70a9554d433f8c8467f",
+      "docs/scoring_quality_audit_plan.md (v1.0)": "32cab9794ec8d4643b726bfdad53a59b5cec14e56637c2284cc963d3b8b0d8f3"
+    }
+  },
+  "detector": {
+    "model": "protectai/deberta-v3-base-prompt-injection-v2",
+    "revision": "90c9989b1a342275dd0d1a95aad283c04e075671",
+    "threshold": 0.5,
+    "device": "cpu",
+    "window_tokens": 510,
+    "overlap_tokens": 128,
+    "labels": {
+      "0": "SAFE",
+      "1": "INJECTION"
+    }
+  },
+  "n_examples": 120,
+  "finished_utc": "2026-11-13T18:57:33Z",
+  "scores_sha256": "20a67fe3d59e0a2c7648d7f97fb45d2b08c4705e429f0ad82a486857630fe5cb",
+  "metrics_sha256": "ff9130e167214acb3b82ac77dd1480d418802d572b6c2f416b28b0c2804c74cf"
+}

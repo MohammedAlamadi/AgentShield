@@ -1,0 +1,21 @@
+{
+  "n_items": 40,
+  "raw_agreement": 1.0,
+  "cohen_kappa": 1.0,
+  "kappa_note": null,
+  "resolutions": {
+    "agreed": 40
+  },
+  "final_labels": {
+    "True": 19,
+    "False": 21
+  },
+  "reviewer_pairs": {
+    "Mohammed Adel / Saif": 8,
+    "Saif / Mohammed Wasfi": 8,
+    "Ali / Abdulaziz": 8,
+    "Abdulaziz / Ali": 8,
+    "Mohammed Wasfi / Mohammed Adel": 8
+  },
+  "final_csv_sha256": "b7dc031bc25f74bcf17741d5e15c9a9d9cb74412d069b4662f718cd21eb46d7f"
+}

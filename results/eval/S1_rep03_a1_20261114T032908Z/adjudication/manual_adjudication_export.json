@@ -1,0 +1,15 @@
+{
+  "prefix": "manual_adjudication",
+  "seed": 413,
+  "n_items": 1,
+  "order": [
+    "MR-086849fe31"
+  ],
+  "created_utc": "2026-11-14T03:31:37Z",
+  "files_sha256": {
+    "manual_adjudication_reviewer_1.csv": "c2ff0e396f85c4391e947344352c98642f84661b717146e12c2b5360bf1538c0",
+    "manual_adjudication_reviewer_2.csv": "c2ff0e396f85c4391e947344352c98642f84661b717146e12c2b5360bf1538c0",
+    "manual_adjudication_key.csv": "5e6e14e196fa1a8e57f3e1081355dceda2c995d98de34358441507355431922d"
+  },
+  "rubric_sha256": "ccffa785128b2304943d8cc53b415c262c8542d1f385f70a9554d433f8c8467f"
+}
