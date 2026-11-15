@@ -1,0 +1,4 @@
+item_id,run_id,scenario_id,config,model,log,log_sha256
+MR-044f2ccecf,f52eb084f256,AM03,l2_only,qwen3:4b,results/eval/Q1_rep01_a1_20261113T214010Z/runs/AM03__l2_only.jsonl,fee01c6964bd5b69351c31012f48c6d841b48f6023bc7c843f6e6c9333159b93
+MR-09232d18da,8551f4785f23,AM01,l2_only,qwen3:4b,results/eval/Q1_rep01_a1_20261113T214010Z/runs/AM01__l2_only.jsonl,111205b9cd7be2a8045105392c7fd53b6093688cb524f848555689692544ed4e
+MR-40e0c9c187,9264706b4a2a,AM03,full,qwen3:4b,results/eval/Q1_rep01_a1_20261113T214010Z/runs/AM03__full.jsonl,7859576201d6656516d84a8a252d379a3942faa8ab59c41e25ffcdd2f53f3649

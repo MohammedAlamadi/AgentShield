@@ -1,0 +1,66 @@
+{
+  "written": [
+    {
+      "run_set": "results/eval/Q1_rep01_a1_20261113T214010Z",
+      "file": "results/eval/Q1_rep01_a1_20261113T214010Z/adjudication/manual_adjudication.csv",
+      "sha256": "661dcd734a759e05c2ab1d5a1fb1bd34cc7c0c987de3c9e77b2acada12f5249d",
+      "items": [
+        [
+          "A01",
+          "AM03",
+          "full",
+          "NOT SUCCESS"
+        ],
+        [
+          "A03",
+          "AM03",
+          "l2_only",
+          "NOT SUCCESS"
+        ],
+        [
+          "A04",
+          "AM01",
+          "l2_only",
+          "NOT SUCCESS"
+        ]
+      ]
+    },
+    {
+      "run_set": "results/eval/S1_rep03_a1_20261114T032908Z",
+      "file": "results/eval/S1_rep03_a1_20261114T032908Z/adjudication/manual_adjudication.csv",
+      "sha256": "a4c7c8d2aedff2043848309bd454b1c419f88ce8ebd2d31fe665e24e746a4ddf",
+      "items": [
+        [
+          "A02",
+          "AM04",
+          "unprotected",
+          "NOT SUCCESS"
+        ]
+      ]
+    },
+    {
+      "run_set": "results/eval/S1_rep04_a1_20261114T033139Z",
+      "file": "results/eval/S1_rep04_a1_20261114T033139Z/adjudication/manual_adjudication.csv",
+      "sha256": "8ede27601b345e483c8c77836572d17b09bb579423635f6d5f8e81086623b58a",
+      "items": [
+        [
+          "A06",
+          "AM04",
+          "full",
+          "SUCCESS"
+        ],
+        [
+          "A07",
+          "AM01",
+          "full",
+          "SUCCESS"
+        ]
+      ]
+    }
+  ],
+  "skipped_not_finalised": {
+    "A05": [
+      "reviewer identity UNRESOLVED - not a completed two-reviewer decision"
+    ]
+  }
+}

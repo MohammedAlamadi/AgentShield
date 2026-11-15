@@ -1,0 +1,31 @@
+{
+  "seed": 413,
+  "n": 20,
+  "method": "per-category quota proportional to size (min 2), round-robin over shuffled scenario x configuration cells",
+  "quota": {
+    "incorrect_arguments": 13,
+    "unauthorised_behaviour": 7
+  },
+  "ids": [
+    "L3R-02-LS04-l3_only-1",
+    "L3R-06-RA05-full-1",
+    "L3R-07-RA01-l3_only-1",
+    "L3R-07-IL04-l3_only-1",
+    "L3R-05-UD04-full-1",
+    "L3R-09-RA01-full-1",
+    "L3R-04-IL04-full-1",
+    "L3R-07-LS04-full-1",
+    "L3R-09-RA05-l3_only-1",
+    "L3R-09-RA05-full-1",
+    "L3R-03-RA01-l3_only-1",
+    "L3R-10-IL04-l3_only-1",
+    "L3R-09-UD04-full-1",
+    "L3R-05-LR01-full-3",
+    "L3R-06-LS02-full-3",
+    "L3R-04-LS02-l3_only-3",
+    "L3R-10-RA03-l3_only-3",
+    "L3R-03-LR01-full-3",
+    "L3R-10-LS02-full-3",
+    "L3R-06-LS02-l3_only-3"
+  ]
+}
