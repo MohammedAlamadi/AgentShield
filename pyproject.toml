@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentshield"
+version = "0.1.0"
+description = "Lightweight three-layer defence against indirect prompt injection for a local tool-using assistant (CSCY413 D2)."
+requires-python = ">=3.11,<3.12"
+readme = "README.md"
+
+[project.scripts]
+agentshield = "agentshield.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "ollama: needs a running local Ollama server with the model pulled (deselect with -m 'not ollama')",
+    "detector: needs the downloaded ProtectAI detector (deselect with -m 'not detector')",
+]

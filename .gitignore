@@ -4,3 +4,16 @@ __pycache__/
 venv/
 .env
 .vscode/
+# Local-only reference material (D1 report, brief, master prompt, handover) - never commit
+docs/reference/
+desktop.ini
+*.egg-info/
+.pytest_cache/
+# Excel/Office lock files
+~$*
+
+# Phase 5 dashboard: live-run sandbox logs (never evaluation evidence)
+dashboard_runs/
+
+# Local development tool configuration (kept locally, not part of the project)
+.claude/

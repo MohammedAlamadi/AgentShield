@@ -1,0 +1,7 @@
+{
+  "name": "l2_only",
+  "description": "Configuration 3: Layer 2 content isolation only",
+  "layers": {"detector": false, "isolation": true, "guard": false},
+  "detector_threshold": 0.5,
+  "max_tool_calls": 6
+}

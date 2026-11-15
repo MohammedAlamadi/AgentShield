@@ -1,0 +1,8 @@
+# AgentShield D2: store every file byte-for-byte. Many files are verified by SHA-256
+# (frozen datasets, run logs, summaries, evidence, verifiers.py, scoring docs, configs).
+# Never let Git convert line endings.
+* -text
+*.xlsx binary
+*.docx binary
+*.png  binary
+*.jpg  binary

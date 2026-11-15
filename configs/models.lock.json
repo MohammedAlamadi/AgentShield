@@ -1,0 +1,30 @@
+{
+  "_comment": "Exact model versions verified on the target laptop on 2026-11-13. Digests from the Ollama /api/tags endpoint.",
+  "ollama_version": "0.40.16",
+  "_ollama_note": "Upgraded from 0.9.0 on 2026-11-13: 0.9.0 could not create a tool parser for the qwen3:4b template (see docs/implementation_deviations.md).",
+  "llm_models": {
+    "llama3.2:3b": {
+      "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+      "size_bytes": 2019393189,
+      "parameters": "3.2B",
+      "quantization": "Q4_K_M",
+      "capabilities": ["completion", "tools"],
+      "license": "Llama 3.2 Community License"
+    },
+    "qwen3:4b": {
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "size_bytes": 2497293931,
+      "parameters": "4.0B",
+      "quantization": "Q4_K_M",
+      "capabilities": ["completion", "tools", "thinking"],
+      "license": "Apache-2.0"
+    }
+  },
+  "detector": {
+    "hf_repo": "protectai/deberta-v3-base-prompt-injection-v2",
+    "revision": "90c9989b1a342275dd0d1a95aad283c04e075671",
+    "license": "Apache-2.0",
+    "device": "cpu",
+    "threshold": 0.5
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "unprotected",
+  "description": "Configuration 1: no defence layers (baseline)",
+  "layers": {"detector": false, "isolation": false, "guard": false},
+  "detector_threshold": 0.5,
+  "max_tool_calls": 6
+}

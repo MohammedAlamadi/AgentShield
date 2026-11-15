@@ -1,0 +1,7 @@
+{
+  "name": "full",
+  "description": "Configuration 5: full AgentShield (L1 + L2 + L3)",
+  "layers": {"detector": true, "isolation": true, "guard": true},
+  "detector_threshold": 0.5,
+  "max_tool_calls": 6
+}

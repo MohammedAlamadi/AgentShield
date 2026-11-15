@@ -1,0 +1,7 @@
+{
+  "name": "l1_only",
+  "description": "Configuration 2: Layer 1 injection detection only",
+  "layers": {"detector": true, "isolation": false, "guard": false},
+  "detector_threshold": 0.5,
+  "max_tool_calls": 6
+}

@@ -1,0 +1,7 @@
+{
+  "name": "l3_only",
+  "description": "Configuration 4: Layer 3 authorization guard only",
+  "layers": {"detector": false, "isolation": false, "guard": true},
+  "detector_threshold": 0.5,
+  "max_tool_calls": 6
+}
