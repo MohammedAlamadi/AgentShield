@@ -116,3 +116,23 @@ Each was run twice live with a fresh model and gave the same outcome both times.
 3. **The Ollama status is cached for 15 s.** If Ollama stops within that window, "Run live" stays enabled, but the run then fails cleanly with "Live execution unavailable — nothing was executed".
 4. **First Layer 1 run per session** loads the detector (about 20–30 s). Do one warm-up run before the viva.
 5. **NOT VERIFIED items:** rows 12–14 of the summary table (§1).
+
+## Update (18 Nov 2026): A05 finalised
+
+This audit describes the dashboard on 14 Nov 2026, when A05 was unresolved. On 18 Nov 2026 A05 was finalised as an adjudicated SUCCESS (`docs/D2_results_inventory.md` §7).
+
+**Dashboard changes:**
+- `VALIDATED_AGGREGATES["S1"]` → `S1_20261118T154119Z`;
+- the S1 description, the S1 note on the Results page and the About-page note now describe the finalised review.
+
+The layout and visual design are unchanged.
+
+**Tests:** the four tests that encoded "A05 unresolved" now check the finalised state against the new aggregate and the adjudication record:
+- `test_s1_full_is_final_after_a05_second_review`;
+- `test_evidence_filter`;
+- `test_story_adjudicated_success_and_inconclusive_is_never_a_result`;
+- `test_three_question_summaries`.
+
+The superseded S1 aggregate was added to the protected-artifact hash check. Full suite: 282 passed, 1 skipped (the live-Ollama test).
+
+**Superseded rows:** the A05 rows above (story "Undetermined (review unresolved)"; 1 unresolved review) are superseded. The run now shows "Attack SUCCEEDED" as the final adjudicated decision.

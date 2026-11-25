@@ -1,10 +1,33 @@
+# AgentShield dashboard theme (see dashboard/DESIGN_SYSTEM.md).
 [theme]
 base = "dark"
-primaryColor = "#22D3EE"
-backgroundColor = "#0A0F1E"
-secondaryBackgroundColor = "#111A2E"
-textColor = "#E6EAF2"
-font = "sans serif"
+primaryColor = "#4FA3BF"
+backgroundColor = "#121418"
+secondaryBackgroundColor = "#1E2228"
+textColor = "#E4E7EB"
+linkColor = "#7DBBD0"
+linkUnderline = false
+borderColor = "#2A2F36"
+dataframeBorderColor = "#2A2F36"
+dataframeHeaderBackgroundColor = "#1E2228"
+dataframeHeaderTextColor = "#A9B1BC"
+showWidgetBorder = true
+baseRadius = "6px"
+buttonRadius = "4px"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+headingFont = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap, monospace"
+baseFontSize = 14
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+headingFontSizes = ["22px", "16px", "14px", "14px", "13px", "13px"]
+codeFontSize = "12.5px"
+redColor = "#D0605A"
+greenColor = "#4FA77A"
+yellowColor = "#C99A3E"
+blueColor = "#4FA3BF"
+grayColor = "#8A929D"
+codeBackgroundColor = "#181B20"
+chartCategoricalColors = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"]
 
 [server]
 headless = true

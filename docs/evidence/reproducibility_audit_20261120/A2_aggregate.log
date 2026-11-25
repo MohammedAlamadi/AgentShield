@@ -1,0 +1,14 @@
+== WORKAROUND W2: pip install -e . --no-deps
+
+[notice] A new release of pip is available: 24.0 -> 26.3
+[notice] To update, run: <HOME>\asr\gh\.venv\Scripts\python.exe -m pip install --upgrade pip
+exit=0
+== python -m agentshield aggregate R1
+R1: 10 repetition(s) [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; written to <HOME>\asr\gh\results\eval\aggregates\R1_20261119T224418Z
+exit=0
+== python -m agentshield aggregate Q1
+Q1: 1 repetition(s) [1]; written to <HOME>\asr\gh\results\eval\aggregates\Q1_20261119T224423Z
+exit=0
+== python -m agentshield aggregate S1
+S1: 5 repetition(s) [1, 2, 3, 4, 5]; written to <HOME>\asr\gh\results\eval\aggregates\S1_20261119T224425Z
+exit=0

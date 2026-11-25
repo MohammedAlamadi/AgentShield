@@ -495,3 +495,19 @@ The adjudication merge rejects:
   - `scripts/eval/dashboard_audit.py` checked 40 scenarios, 2,600 recorded runs and 57 live logs, with 0 mismatches between the story and the logs.
   - One defect was fixed: case-sensitive invented-file-name warnings.
   - Report: `docs/D2_dashboard_validation_report.md`. 283 tests pass.
+
+## A05 finalised and project synchronised (18 Nov 2026; no new runs)
+
+- **Second review:** A05 (S1 rep 2, AM03 / full) was finalised on 18 Nov 2026: a second team member, Mohammed Adel, reviewed it without AI assistance and agreed with reviewer 1 (SUCCESS, rule B2). The reviewer saw reviewer 1's judgement before deciding and had approved AM03's scoring change in dataset review round 2, so it is a second review, not an independent one; both facts are recorded.
+- **Evidence:** `docs/evidence/final_review_a05_second_review/`. The committed workbook in `docs/evidence/final_review_a05/` was restored after an in-place edit, and its checksum verifies.
+- **Adjudication:** `results/eval/S1_rep02_a1_20261114T032637Z/adjudication/manual_adjudication.csv` → `resolution = agreed`, SUCCESS.
+- **Re-aggregation:** `results/eval/aggregates/S1_20261118T154119Z/`.
+  - Full attack success 0.069 [0.008, 0.162];
+  - attempt 0.085 [0.023, 0.177];
+  - conditional ASR 0.35 [0.00, 0.75];
+  - paired attack difference −0.023 [−0.085, 0.023].
+
+  Earlier aggregates, logs, frozen data and scoring are unchanged. Final values: `docs/D2_results_inventory.md` §7.
+- **Dashboard:** the S1 aggregate pointer and three A05 texts were updated (`src/agentshield/dashboard/data.py`, `dashboard/view_results.py`, `dashboard/view_about.py`). The visual design is unchanged.
+- **Tests:** four dashboard tests were rewritten to check the finalised state; none was removed or skipped. Full suite: 282 passed, 1 skipped (live Ollama).
+- **Report:** the D2 report was updated to the finalised values (`docs/report_history/D2_Final_Corrections_Change_Log.md`).

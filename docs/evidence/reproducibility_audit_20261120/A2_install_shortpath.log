@@ -1,0 +1,15 @@
+== git clone https://github.com/MohammedAlamadi/AgentShield-D2.git gh
+exit=0
+f1a3898 Import AgentShield D2 project (developed jointly by the five-member team)
+== py -3.11 -m venv .venv
+exit=0
+== python -m pip install -r requirements.txt
+
+[notice] A new release of pip is available: 24.0 -> 26.3
+[notice] To update, run: <HOME>\asr\gh\.venv\Scripts\python.exe -m pip install --upgrade pip
+exit=0
+== python -m pip install -r requirements-dashboard.txt
+
+[notice] A new release of pip is available: 24.0 -> 26.3
+[notice] To update, run: <HOME>\asr\gh\.venv\Scripts\python.exe -m pip install --upgrade pip
+exit=0

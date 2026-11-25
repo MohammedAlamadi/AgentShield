@@ -1,0 +1,23 @@
+== agentshield check
+Python 3.11.9 OK
+  ollama       0.6.3
+  torch        2.15.0+cpu
+  transformers 5.22.2
+  pytest       9.2.0
+  pandas       3.1.1
+  matplotlib   3.11.2
+Ollama server 0.40.16 (locked: 0.40.16)
+  llama3.2:3b  digest OK
+  qwen3:4b     digest OK
+CHECK PASSED
+exit=0
+== pytest -m 'ollama or detector'
+....                                                                     [100%]
+============================== warnings summary ===============================
+tests/test_dashboard.py::test_real_live_run_through_ollama
+  <HOME>\asr\gh\.venv\Lib\site-packages\torch\jit\_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 279 deselected, 1 warning in 25.19s
+exit=0

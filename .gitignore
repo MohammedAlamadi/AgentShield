@@ -17,3 +17,8 @@ dashboard_runs/
 
 # Local development tool configuration (kept locally, not part of the project)
 .claude/
+
+# Local outputs of ad-hoc scenario and evaluation runs (README examples) and local Streamlit secrets
+audit_runs/
+audit_eval/
+.streamlit/secrets.toml

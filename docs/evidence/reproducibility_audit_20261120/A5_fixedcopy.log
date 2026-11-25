@@ -1,0 +1,50 @@
+== py -3.11 -m venv .venv
+exit=0
+== .venv/Scripts/python -m pip install -q -r requirements.txt
+
+exit=0
+== .venv/Scripts/python -m pip install -q -r requirements-dashboard.txt
+
+exit=0
+== .venv/Scripts/python -m pip install -q -e . --no-deps
+
+exit=0
+== cmd //c attrib +R data\eval\detector_examples_v1.jsonl
+File not found - dataevaldetector_examples_v1.jsonl
+exit=0
+== cmd //c attrib +R data\eval\scenarios_v1.json
+File not found - dataevalscenarios_v1.json
+exit=0
+== cmd //c attrib +R data\eval\FROZEN_MANIFEST.json
+File not found - dataevalFROZEN_MANIFEST.json
+exit=0
+== .venv/Scripts/python -m pytest -m "not ollama and not detector" -q -p no:cacheprovider
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+........................................................................ [ 77%]
+...............................................................          [100%]
+279 passed, 4 deselected in 42.51s
+exit=0
+== .venv/Scripts/python scripts/eval/verify_reproduction.py
+Frozen datasets: manifest and dataset hashes verified
+R1: REPRODUCED EXACTLY vs R1_20261113T212758Z (aggregate.json differences: 0; per_scenario.csv identical: True)
+Q1: REPRODUCED EXACTLY vs Q1_20261114T131523Z (aggregate.json differences: 0; per_scenario.csv identical: True)
+S1: REPRODUCED EXACTLY vs S1_20261118T154119Z (aggregate.json differences: 0; per_scenario.csv identical: True)
+ALL OFFICIAL AGGREGATES REPRODUCED
+exit=0
+== .venv/Scripts/python -m agentshield check
+  pandas       3.1.1
+  matplotlib   3.11.2
+Ollama server 0.40.16 (locked: 0.40.16)
+  llama3.2:3b  digest OK
+  qwen3:4b     digest OK
+CHECK PASSED
+exit=0
+== .venv/Scripts/python -m pytest -m "ollama or detector" -q -p no:cacheprovider
+tests/test_dashboard.py::test_real_live_run_through_ollama
+  <HOME>\asr\wt\.venv\Lib\site-packages\torch\jit\_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 279 deselected, 1 warning in 20.71s
+exit=0

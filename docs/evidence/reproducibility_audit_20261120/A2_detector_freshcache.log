@@ -1,0 +1,12 @@
+== HF_HOME=<empty dir> pytest -m detector
+...                                                                      [100%]
+============================== warnings summary ===============================
+tests/test_detector.py::test_real_detector_labels_and_cpu
+  <HOME>\asr\gh\.venv\Lib\site-packages\torch\jit\_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 280 deselected, 1 warning in 131.13s (0:02:11)
+exit=0
+CACHEDIR.TAG
+models--protectai--deberta-v3-base-prompt-injection-v2

@@ -1,0 +1,9 @@
+Python 3.11.9 OK
+  ollama       0.6.3
+  torch        2.15.0+cpu
+  transformers 5.22.2
+  pytest       9.2.0
+  pandas       3.1.1
+  matplotlib   3.11.2
+Ollama server not reachable at http://127.0.0.1:11434: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>. Start the Ollama app.
+CHECK FAILED

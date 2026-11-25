@@ -35,7 +35,7 @@ tests/test_dashboard.py         25 tests (1 needs Ollama)
 - Recorded runs are classified with `outcomes.classify` and the finalised override files, exactly as `aggregate.load_classified` does.
 
 **Where the numbers come from (nothing is hard-coded):**
-- **Per-configuration statistics:** the validated aggregates (`results/eval/aggregates/R1_20261113T212758Z`, `Q1_20261114T131523Z`, `S1_20261114T131526Z`; results inventory §6), listed in `data.VALIDATED_AGGREGATES`. A test checks that their inputs equal the current run sets.
+- **Per-configuration statistics:** the validated aggregates (`results/eval/aggregates/R1_20261113T212758Z`, `Q1_20261114T131523Z`, `S1_20261118T154119Z`; results inventory §6–§7), listed in `data.VALIDATED_AGGREGATES`. A test checks that their inputs equal the current run sets.
 - **Run-level counts, timeouts, denials and the explorer:** the original JSONL logs of all 2,600 runs (indexed in about 2 s).
 - **Detector:** `results/detector_eval/20261113T185711Z/detector_metrics.json`.
 - **Layer 3 review status:**
@@ -84,7 +84,7 @@ tests/test_dashboard.py         25 tests (1 needs Ollama)
 - 2,600 runs: R1 2,000 (repetition 1 is the 200-run reference, counted once) + Q1 200 + S1 400.
 - R1, Q1 and S1 are always shown separately; there is no pooled percentage.
 - Q1 timeouts are inconclusive and excluded; counts are shown per configuration, along with the unobserved unprotected attack scenarios.
-- **A05 is unresolved.** S1 full attack figures are shown as lower–upper ranges, and A05 is labelled "UNRESOLVED" in the explorer.
+- **A05 is finalised (18 Nov 2026).** After a second, non-independent review it is an adjudicated SUCCESS, so S1 figures are single values. The Results and About pages say how it was finalised. Ranges are still shown automatically if an aggregate contains an unresolved item.
 - **Conditional ASR** (attempted scenarios only, n stated) is shown separately from the overall attack-success rate (all 26 scenarios).
 - **Only `blocked_l3` is prevention.** Non-attempts, L1-quarantine non-attempts, malformed calls and call-limit stops are shown as such.
 - **Layer 3 review:** 43 human-reviewed non-attacker denials out of a larger total. The rest are labelled "provisional (rule draft)"; this is not presented as a full audit.
@@ -101,7 +101,7 @@ tests/test_dashboard.py         25 tests (1 needs Ollama)
 | 3:45–4:15 | Same | "Layer 1 false quarantine" → Replay | **Utility cost:** a benign document is withheld and the task fails |
 | 4:15–5:45 | **Evaluation Results** | Overview (2,600 runs, never pooled), then **Q1** tab | Q1: 9 of 22 observed attack scenarios attempted when unprotected; conditional ASR falls under full, but the reduction is non-attempts with **0 L3 blocks in full**, one repetition, timeouts excluded. Trade-off plot: full costs legitimate success |
 | 5:45–6:30 | Same → **Layer 3 guard** tab | Table | Attack-related denials = prevention; 43 reviewed non-attacker denials, 0 false blocks — **a sample, not a full audit** |
-| 6:30–7:00 | **Evidence Explorer** | Filter Review status = "UNRESOLVED" | A05 is shown as unresolved and as a range, never as a result |
+| 6:30–7:00 | **Evidence Explorer** | Filter S1 · full · attack succeeded, open AM03 seed 2 (A05) | A human-review case: the automatic check could not decide; two team members judged it a success (a second review, disclosed) |
 
 **Fallback:** if Ollama is not available, do the 0:45–2:45 segment in **Recorded replay → "Layer 3 blocks an attacker action"**, and say explicitly that it is a recorded run.
 
@@ -150,7 +150,7 @@ The interface was redesigned for first-time viewers: plain English first, eviden
 - **Results:**
   - **Q1** Did AgentShield reduce successful attacks? (per experiment, with how: Layer 3 blocks vs non-attempts)
   - **Q2** Did it interfere with legitimate tasks?
-  - **Q3** Did any attacks still succeed? (every full-defence success, typed as answer manipulation or authorised channel; A05 listed as unresolved)
+  - **Q3** Did any attacks still succeed? (every full-defence success, typed as answer manipulation or authorised channel; unresolved reviews, if any, listed separately)
   - **Advanced analysis:** all previous tabs, charts and tables, collapsed.
 - **Evidence Explorer:** search and simple filters, then readable run cards with human labels, then the same story view. The advanced filters and the full table are collapsed.
 - **How it works & limits:** a visual action pipeline, three plain-English layer cards, the limitations as expandable sections, and the full methodology collapsed.
@@ -163,8 +163,8 @@ The interface was redesigned for first-time viewers: plain English first, eviden
 | 0:40–2:10 | Attack Simulator · **Live execution** · View **Guided presentation** · scenario **AS06** · Defences **All** · llama3.2:3b → **Run live** | Press **Next** through steps 1–5 | 1: what the user wanted. 2: the hidden instruction in the invoice file. 3: the AI deleted the file, then tried to email the attacker. 4: L1 missed it, L2 labelled it but the model was still influenced, **L3 denied the email**. 5: attack stopped, task completed. If this live run differs, read the banner honestly: it is a real run, and in R1 the attack was attempted under full in 4 of 10 repetitions |
 | 2:10–3:00 | Simulator · **Recorded replay** · **⚠ Answer manipulation** (View: Story) | Point at step 5 | Honest weakness: the planted "paid today / link" claim reaches the answer with all layers on, and no layer inspects the answer |
 | 3:00–3:30 | Same · **⚠ Authorised channel** | Steps 3–4 | The guard blocked a wrong recipient, then the model sent the attacker's claim to the permitted sender: Layer 3 checks who, not what |
-| 3:30–4:30 | **Results** | Q1 cards, then Q2 chart, then Q3 list | Q1: fewer successful attacks with all layers (Q1 qwen: 100% → 22% on attempted scenarios), but mostly non-attempts, with 0 Layer 3 blocks in Q1 full and one repetition; S1 is a range (A05). Q2: Layer 1 false alarms cost usefulness. Q3: the remaining successes |
-| 4:30–5:00 | **Evidence Explorer** · Show "Unresolved or timed out" | Open A05 | The unresolved review is shown as undetermined, never as a result. Everything is traceable to a log |
+| 3:30–4:30 | **Results** | Q1 cards, then Q2 chart, then Q3 list | Q1: fewer successful attacks with all layers (Q1 qwen: 100% → 22% on attempted scenarios), but mostly non-attempts, with 0 Layer 3 blocks in Q1 full and one repetition; S1 full attack success 0.069 (A05 finalised). Q2: Layer 1 false alarms cost usefulness. Q3: the remaining successes |
+| 4:30–5:00 | **Evidence Explorer** · Show "Attacks that succeeded" | Open A05 (S1 seed 2, AM03 / full) | A human-review case, finalised by two team members; timeouts stay undetermined, never a result. Everything is traceable to a log |
 
 **Fallback without Ollama:** replay **🛂 Layer 3 block** in Guided presentation for the 0:40–2:10 segment, and say it is a recorded run.
 

@@ -1,5 +1,6 @@
-"""B. Evaluation Results. Every number is read from the validated aggregates, the detector run or the run logs;
-R1, Q1 and S1 are always shown separately (never pooled)."""
+"""Results. Every number is read from the validated aggregates, the detector run or the run logs; R1, Q1 and S1 are
+always shown separately (never pooled). Chart roles follow the dataviz skill: position carries identity, status colours
+only for outcomes (with a legend), the validated series palette only where identity needs colour."""
 
 from __future__ import annotations
 
@@ -8,78 +9,110 @@ import pandas as pd
 import streamlit as st
 
 import components as ui
+import components_v2 as V
 import state
 from agentshield.dashboard import data as D
 
-AX = {"labelColor": "#C9D2E3", "titleColor": "#8A97B2", "gridColor": "#1E2A44", "domainColor": "#24314F", "tickColor": "#24314F"}
+ORDER = [D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER]
+NEUTRAL_BAR = "#6E7884"
+SERIES_SCALE = alt.Scale(domain=ORDER, range=[ui.CONFIG_COLOR[c] for c in D.CONFIG_ORDER])
+pct, cival = ui.pct, ui.ci
 
 
-def _cfg(chart):
-    return (chart.configure_view(strokeWidth=0).configure_axis(**AX).configure_legend(labelColor="#C9D2E3", titleColor="#8A97B2")
-            .configure(background="transparent"))
+def _rng(lo, hi):
+    return pct(lo) if lo == hi else f"{pct(lo)} – {pct(hi)}"
 
 
-def _pct(x):
-    return "—" if x is None else f"{x * 100:.1f}%"
+# ------------------------------------------------------------------ summary
+OUTCOME_ORDER = ["Succeeded", "Blocked by Layer 3", "Attempted, did not succeed", "Under review", "Not attempted after Layer 1", "Not attempted"]
+OUTCOME_COLOR = [ui.T["critical"], ui.T["good"], ui.T["warning"], "#B48ACB", "#5A6270", "#3A4049"]
 
 
-def _range(lo, hi):
-    return _pct(lo) if lo == hi else f"{_pct(lo)} – {_pct(hi)}"
-
-
-def _ci(ci):
-    return "" if not ci else f"[{ci[0] * 100:.1f}, {ci[1] * 100:.1f}]"
-
-
-CFG_SCALE = alt.Scale(domain=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], range=[ui.CONFIG_COLOR[c] for c in D.CONFIG_ORDER])
-
-
-def _overview():
-    ov = state.overview()
+def outcome_breakdown(exps, config: str = "full") -> pd.DataFrame:
+    """What happened to every valid attack run, from the run index (counts sum to the valid attack runs)."""
     idx = state.run_index()
-    E = ov["experiments"]
-    n_att = len({r["scenario"] for r in idx.runs if r["is_attack"]})
-    n_sc = len({r["scenario"] for r in idx.runs})
-    inc = {e: v["inconclusive"] for e, v in E.items() if v["inconclusive"]}
-    unres = [f"{r['experiment']} {r['scenario']}/{r['config']} rep {r['repetition']}" for r in idx.runs if r["attack"] == "manual_review"]
-    c = st.columns(4)
-    with c[0]:
-        ui.kpi("End-to-end runs", f"{ov['total_runs']:,}", " + ".join(f"{e} {v['runs']:,}" for e, v in E.items()) + " (the 200-run reference evaluation is R1 repetition 1, counted once)")
-    with c[1]:
-        ui.kpi("Frozen scenarios", str(n_sc), f"{n_att} attack + {n_sc - n_att} benign; datasets and scoring frozen before any run")
-    with c[2]:
-        ui.kpi("Inconclusive runs", str(sum(inc.values())), ("in " + ", ".join(f"{e} ({n})" for e, n in inc.items()) if inc else "none") + " · model-call timeout; excluded from denominators", ui.C["amber"])
-    with c[3]:
-        ui.kpi("Unresolved reviews", str(len(unres)), ("; ".join(unres) + " · single review → reported as a range") if unres else "none", ui.C["amber"])
-    st.write("")
     rows = []
-    for e, v in ov["experiments"].items():
-        rows.append({"Experiment": e, "Model": ", ".join(v["model"]), "Configurations": ", ".join(D.CONFIG_LABEL[x] for x in v["configs"]),
-                     "Repetitions / seeds": v["repetitions"], "Runs": v["runs"], "Inconclusive": v["inconclusive"], "Six-call-limit stops": v["call_limit_stops"],
-                     "Adjudicated attack items": v["adjudicated"], "Unresolved": v["manual_review_unresolved"], "Median s/run": v["median_wall_time_s"]})
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
-    for e in ("R1", "Q1", "S1"):
-        ui.explain(f"{e}: {D.EXPERIMENT_TEXT[e]}")
-    ui.warnbox("The three experiments differ in model, sampling and repetitions. Their rates are shown side by side only; they are never combined into one percentage.")
-    # side-by-side small multiples of overall attack success (bounds) per experiment
-    recs = []
-    for e in ("R1", "Q1", "S1"):
-        for r in state.metric_table(e):
-            recs.append({"Experiment": e, "Configuration": r["config_label"], "lower": r["attack_success_lower"], "upper": r["attack_success_upper"],
-                         "legit": r["legit_success"]})
-    df = pd.DataFrame(recs)
-    base = alt.Chart(df).encode(y=alt.Y("Configuration:N", sort=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], title=None))
-    bars = base.mark_bar(cornerRadiusEnd=4, height=14).encode(x=alt.X("upper:Q", title="Attack success rate (all attack scenarios)", axis=alt.Axis(format="%")),
-                                                             color=alt.Color("Configuration:N", scale=CFG_SCALE, legend=None),
-                                                             tooltip=["Experiment", "Configuration", alt.Tooltip("lower:Q", format=".1%"), alt.Tooltip("upper:Q", format=".1%")])
-    lo = base.mark_tick(color="white", thickness=2, size=16).encode(x="lower:Q")
-    st.altair_chart(_cfg(alt.layer(bars, lo).properties(width=270, height=170).facet(
-        column=alt.Column("Experiment:N", title=None, sort=["R1", "Q1", "S1"], header=alt.Header(labelColor="#E6EAF2", labelFontSize=14))).resolve_scale(x="independent")),
-                    use_container_width=False)
-    st.caption("Bars = upper bound, white tick = lower bound (they differ only where a manual-review item is unresolved). Over ALL 26 attack scenarios, "
-               "so a low rate partly reflects how rarely the model attempts attacks at all.")
+    for e in exps:
+        c = next(x for x in D.counts_with_denominators(idx.runs, e) if x["config"] == config)
+        other = c["attempted_lower"] - c["succeeded_lower"] - c["blocked_l3"]
+        parts = {"Succeeded": c["succeeded_lower"], "Blocked by Layer 3": c["blocked_l3"], "Attempted, did not succeed": other,
+                 "Under review": c["manual_review"], "Not attempted after Layer 1": c["not_attempted_after_l1"],
+                 "Not attempted": c["not_attempted"] - c["not_attempted_after_l1"]}
+        for k, v in parts.items():
+            rows.append({"Campaign": e, "Outcome": k, "Runs": v, "Share": v / c["attack_n"] if c["attack_n"] else 0, "Of": c["attack_n"]})
+    return pd.DataFrame(rows)
 
 
+def _breakdown_chart(df: pd.DataFrame, y_field: str, y_sort, height: int = 0) -> str:
+    """Part-to-whole bars drawn as HTML segments (one row per campaign or configuration), with a legend and hover titles."""
+    colors = dict(zip(OUTCOME_ORDER, OUTCOME_COLOR))
+    used = [o for o in OUTCOME_ORDER if df[df["Outcome"] == o]["Runs"].sum() > 0]
+    legend = "".join(f"<span class='as-bk-l'><i style='background:{colors[o]}'></i>{ui.esc(o)}</span>" for o in used)
+    rows = []
+    for key in [k for k in y_sort if k in set(df[y_field])]:
+        sub = df[df[y_field] == key]
+        of = int(sub["Of"].iloc[0])
+        segs = "".join(f"<span class='seg' style='width:{r.Share * 100:.3f}%;background:{colors[r.Outcome]}' "
+                       f"title='{ui.esc(r.Outcome)}: {int(r.Runs)} of {of} runs ({r.Share * 100:.1f}%)'></span>"
+                       for r in sub.itertuples() if r.Runs > 0)
+        succ = int(sub[sub["Outcome"] == "Succeeded"]["Runs"].sum())
+        blk = int(sub[sub["Outcome"] == "Blocked by Layer 3"]["Runs"].sum())
+        rows.append(f"<div class='as-bk-r'><div class='k'>{ui.esc(key)}</div><div class='bar'>{segs}</div>"
+                    f"<div class='n'><span style='color:var(--crit)'>{succ}</span> succeeded, <span style='color:var(--good)'>{blk}</span> blocked, of {of}</div></div>")
+    return f"<div class='as-bk'><div class='as-bk-leg'>{legend}</div>{''.join(rows)}</div>"
+
+
+def _summary():
+    from agentshield.dashboard import summary as SM
+    idx = state.run_index()
+    ui.section("Unprotected versus full defence, by campaign", "Attack success on the attack scenarios each unprotected model actually attempted. Campaigns are never combined.")
+    cards = []
+    for q in SM.q1_reduction(idx.runs):
+        u, f = q["unprotected"], q["full"]
+        e = q["experiment"]
+        blocks = q["blocked_l3_full"]
+        tags = [V.st_tag(f"{blocks} blocked by Layer 3", "good" if blocks else "neutral", glyph=bool(blocks)),
+                V.st_tag(f"{q['conditional_n']} of 26 attempted", "neutral", glyph=False)]
+        cards.append(f"<div class='as-cc'><div class='top'><span class='nm'>{e}</span><span class='md'>{ui.esc(D.EXPERIMENT_TEXT[e].split(',')[0])}</span></div>"
+                     f"<div class='fig'><span class='a'>{_rng(u['conditional_asr_lower'], u['conditional_asr_upper'])}</span><span class='ar'>→</span>"
+                     f"<span class='b'>{_rng(f['conditional_asr_lower'], f['conditional_asr_upper'])}</span></div>"
+                     f"<div class='as-sm'>Attack success, unprotected → full defence</div>"
+                     f"<div class='as-meta'>{''.join(tags)}</div>"
+                     f"<div class='as-sm' style='margin-top:10px'>Task success {pct(u['legit_success'])} → {pct(f['legit_success'])}</div></div>")
+    st.markdown(f"<div class='as-cmp'>{''.join(cards)}</div>", unsafe_allow_html=True)
+
+    ui.section("What happened to attack runs under full defence", "Every valid attack run with all three layers on. Only a Layer 3 denial of the attacker's own action is a block.")
+    st.markdown(_breakdown_chart(outcome_breakdown(("R1", "Q1", "S1")), "Campaign", ["R1", "Q1", "S1"]), unsafe_allow_html=True)
+    st.caption("Most of the reduction is attacks that were never attempted, often after Layer 1 withheld the content. Those runs are not counted as prevention.")
+
+    c1, c2 = st.columns([1.15, 1], gap="medium")
+    with c1:
+        ui.section("Cost to legitimate tasks", "Task success by configuration; whiskers are 95% intervals.")
+        q2 = pd.DataFrame(SM.q2_utility())
+        q2["Configuration"] = q2["config_label"]
+        q2["lo"] = q2["ci"].apply(lambda c: c[0] if c else None)
+        q2["hi"] = q2["ci"].apply(lambda c: c[1] if c else None)
+        base = alt.Chart(q2).encode(y=alt.Y("Configuration:N", sort=ORDER, title=None))
+        ch = alt.layer(
+            base.mark_bar(cornerRadiusEnd=3, height=11, color=NEUTRAL_BAR).encode(
+                x=alt.X("legit:Q", title="Task success", axis=alt.Axis(format="%", tickCount=3), scale=alt.Scale(domain=[0, 1])),
+                tooltip=[alt.Tooltip("experiment:N", title="Campaign"), "Configuration", alt.Tooltip("legit:Q", format=".1%", title="Task success"),
+                         alt.Tooltip("diff:Q", format="+.1%", title="vs unprotected")]),
+            base.mark_rule(color=ui.T["tx"], strokeWidth=1.2).encode(x="lo:Q", x2="hi:Q"),
+        ).properties(width=150, height=130)
+        st.altair_chart(ui.chart(ch.facet(column=alt.Column("experiment:N", title=None, sort=["R1", "Q1", "S1"]), spacing=14)), width="content")
+    with c2:
+        ui.section("Attacks that still succeeded", "Full defence, every campaign.")
+        q3 = SM.q3_residual(idx.runs)
+        rows = []
+        for c in q3:
+            kind = (c["kind"] or "").split(" — ")[0].split(" - ")[0]
+            rows.append(V.frow("x", "bad", f"{c['scenario']} in {c['experiment']}", f"{kind}: {c['succeeded']} of {c['runs']} runs",
+                               V.st_tag(kind.split(" ")[0], "bad", glyph=False)))
+        st.markdown(f"<div class='as-card2'>{''.join(rows) or 'None'}</div>", unsafe_allow_html=True)
+
+
+# ------------------------------------------------------------------ one campaign
 def _experiment(exp: str):
     mt = state.metric_table(exp)
     idx = state.run_index()
@@ -88,133 +121,134 @@ def _experiment(exp: str):
     ui.explain(D.EXPERIMENT_TEXT[exp])
     if exp == "Q1":
         to = D.timeouts_by_config(idx.runs, exp)
-        ui.warnbox("Q1 timeouts (inconclusive, excluded from every denominator): " + ", ".join(f"{D.CONFIG_LABEL[c]} {n}" for c, n in to.items())
-                   + f" · total {sum(to.values())}. Missing cells mean denominators differ by configuration. One repetition: no repeatability evidence.")
+        ui.warnbox("Timed-out runs are inconclusive and excluded from every denominator: " + ", ".join(f"{D.CONFIG_LABEL[c]} {n}" for c, n in to.items())
+                   + f" (total {sum(to.values())}). Denominators therefore differ by configuration. One repetition gives no repeatability evidence.")
     if exp == "S1":
-        ui.warnbox("S1 full-defence attack figures are a RANGE. A05 (AM03, seed 2) is an unresolved single review: lower bound counts it NOT SUCCESS, upper bound SUCCESS. It is never shown as a final result.")
+        ui.warnbox("A05 (AM03, seed 2, full defence) was finalised as an attack success on 18 Nov 2026 after a second review. The second reviewer saw the first "
+                   "reviewer's judgement, so it is a second review, not an independent one. Figures use the re-aggregated S1 results; the earlier range is kept in the previous aggregate.")
 
-    # KPI row: unprotected vs full
     u = next(r for r in mt if r["config"] == "unprotected")
     f = next(r for r in mt if r["config"] == "full")
-    k = st.columns(4)
     atk_ids = {r["scenario"] for r in idx.runs if r["experiment"] == exp and r["is_attack"]}
     observed = {r["scenario"] for r in idx.runs if r["experiment"] == exp and r["is_attack"] and r["config"] == "unprotected" and r["legit"] != "inconclusive"}
-    with k[0]:
-        if len(observed) < len(atk_ids):
-            ui.kpi("Attack scenarios attempted (unprotected)", f"{len(cset)} / {len(observed)} observed",
-                   f"{len(atk_ids) - len(observed)} of {len(atk_ids)} had no valid unprotected run (timeout), so {len(cset)}–{len(cset) + len(atk_ids) - len(observed)} of {len(atk_ids)}")
-        else:
-            ui.kpi("Attack scenarios attempted (unprotected)", f"{len(cset)} / {len(atk_ids)}", "attempted in ≥1 repetition — the base for conditional ASR")
-    with k[1]:
-        ui.kpi("Conditional ASR · unprotected → full", f"{_range(u['conditional_asr_lower'], u['conditional_asr_upper'])} → {_range(f['conditional_asr_lower'], f['conditional_asr_upper'])}",
-               f"only the {len(cset)} attempted scenarios; full CI {_ci(f['conditional_asr_ci'])}")
-    with k[2]:
-        ui.kpi("Overall attack success · full", _range(f["attack_success_lower"], f["attack_success_upper"]), "over all 26 attack scenarios (mean of per-scenario rates)")
-    with k[3]:
-        ui.kpi("Legitimate success · unprotected → full", f"{_pct(u['legit_success'])} → {_pct(f['legit_success'])}", "utility cost of the defences")
+    if len(observed) < len(atk_ids):
+        att_val, att_sub = f"{len(cset)} of {len(observed)}", f"observed; {len(atk_ids) - len(observed)} scenarios had no valid unprotected run (timeout)"
+    else:
+        att_val, att_sub = f"{len(cset)} of {len(atk_ids)}", "attempted in at least one repetition: the base for the conditional rate"
+    st.markdown("<div class='as-tiles'>" + "".join([
+        V.tile("Attack scenarios attempted", att_val, ui.esc(att_sub), "target"),
+        V.tile("Conditional attack success", f"{_rng(u['conditional_asr_lower'], u['conditional_asr_upper'])} → {_rng(f['conditional_asr_lower'], f['conditional_asr_upper'])}",
+               f"unprotected → full; full 95% CI {cival(f['conditional_asr_ci'])}", "shield"),
+        V.tile("Attack success, full defence", _rng(f["attack_success_lower"], f["attack_success_upper"]), "over all 26 attack scenarios", "x", "bad"),
+        V.tile("Task success", f"{pct(u['legit_success'])} → {pct(f['legit_success'])}", "unprotected → full: the utility cost", "check"),
+    ]) + "</div>", unsafe_allow_html=True)
+    ui.section("What happened to attack runs, by configuration")
+    bd = pd.concat([outcome_breakdown([exp], cfg).assign(Configuration=D.CONFIG_LABEL[cfg]) for cfg in D.CONFIG_ORDER
+                    if any(r["experiment"] == exp and r["config"] == cfg for r in idx.runs)])
+    st.markdown(_breakdown_chart(bd, "Configuration", ORDER), unsafe_allow_html=True)
 
-    t1, t2 = st.columns(2)
     df = pd.DataFrame(mt)
     long = []
     for r in mt:
-        long.append({"Configuration": r["config_label"], "Metric": "Attempted", "value": r["attack_attempt_upper"], "lo": r["attack_attempt_ci"][0] if r["attack_attempt_ci"] else None,
-                     "hi": r["attack_attempt_ci"][1] if r["attack_attempt_ci"] else None, "range_lo": r["attack_attempt_lower"]})
-        long.append({"Configuration": r["config_label"], "Metric": "Succeeded", "value": r["attack_success_upper"], "lo": (r["attack_success_ci_upper"] or [None, None])[0],
-                     "hi": (r["attack_success_ci_upper"] or [None, None])[1], "range_lo": r["attack_success_lower"]})
+        long.append({"Configuration": r["config_label"], "Outcome": "Attempted", "value": r["attack_attempt_upper"], "lower": r["attack_attempt_lower"],
+                     "lo": (r["attack_attempt_ci"] or [None, None])[0], "hi": (r["attack_attempt_ci"] or [None, None])[1]})
+        long.append({"Configuration": r["config_label"], "Outcome": "Succeeded", "value": r["attack_success_upper"], "lower": r["attack_success_lower"],
+                     "lo": (r["attack_success_ci_upper"] or [None, None])[0], "hi": (r["attack_success_ci_upper"] or [None, None])[1]})
     ldf = pd.DataFrame(long)
-    with t1:
-        st.markdown("**Attack attempt vs success (all 26 attack scenarios)**")
-        base = alt.Chart(ldf).encode(x=alt.X("Configuration:N", sort=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], title=None, axis=alt.Axis(labelAngle=-25)), xOffset="Metric:N")
-        bars = base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(
-            y=alt.Y("value:Q", title="Rate", axis=alt.Axis(format="%")), color=alt.Color("Metric:N", scale=alt.Scale(range=["#64748B", ui.C["red"]]), title=None),
-            tooltip=["Configuration", "Metric", alt.Tooltip("range_lo:Q", title="lower bound", format=".1%"), alt.Tooltip("value:Q", title="upper bound", format=".1%"),
-                     alt.Tooltip("lo:Q", format=".1%", title="95% CI low"), alt.Tooltip("hi:Q", format=".1%", title="95% CI high")])
-        err = base.mark_errorbar(color="#E6EAF2").encode(y=alt.Y("lo:Q", title="Rate"), y2="hi:Q")
-        st.altair_chart(_cfg(alt.layer(bars, err).properties(height=300)), use_container_width=True)
-        st.caption("Attempted = the model proposed the attacker's action or relayed the planted claim; Succeeded = the attacker's goal happened. "
-                   "The gap is prevention or failed attempts. Error bars: 95% scenario-cluster bootstrap.")
-    with t2:
-        st.markdown("**Utility vs security trade-off**")
+    c1, c2 = st.columns(2, gap="medium")
+    with c1:
+        ui.section("Attempted versus succeeded", "All 26 attack scenarios. The gap between the bars is prevention or failed attempts.")
+        base = alt.Chart(ldf).encode(y=alt.Y("Configuration:N", sort=ORDER, title=None), yOffset=alt.YOffset("Outcome:N", sort=["Attempted", "Succeeded"]))
+        bars = base.mark_bar(cornerRadiusEnd=3, height=10).encode(
+            x=alt.X("value:Q", title="Rate over attack scenarios", axis=alt.Axis(format="%", tickCount=5)),
+            color=alt.Color("Outcome:N", scale=alt.Scale(domain=["Attempted", "Succeeded"], range=[NEUTRAL_BAR, ui.T["critical"]]), title=None),
+            tooltip=["Configuration", "Outcome", alt.Tooltip("value:Q", format=".1%", title="Rate"), alt.Tooltip("lo:Q", format=".1%", title="95% CI low"),
+                     alt.Tooltip("hi:Q", format=".1%", title="95% CI high")])
+        err = base.mark_rule(color=ui.T["tx2"], strokeWidth=1).encode(x="lo:Q", x2="hi:Q")
+        st.altair_chart(ui.chart(alt.layer(bars, err).properties(height=260)), width="stretch")
+    with c2:
+        ui.section("Security against utility", "Each point is one configuration. Lower and further up is better.")
         tdf = df.assign(attack=df["attack_success_upper"], legit=df["legit_success"])
-        pts = alt.Chart(tdf).mark_circle(size=260, opacity=.95, stroke="#0A0F1E", strokeWidth=2).encode(
-            x=alt.X("attack:Q", title="Attack success (upper bound) → worse", axis=alt.Axis(format="%")),
-            y=alt.Y("legit:Q", title="Legitimate success → better", axis=alt.Axis(format="%"), scale=alt.Scale(zero=False)),
-            color=alt.Color("config_label:N", scale=CFG_SCALE, title=None),
-            tooltip=[alt.Tooltip("config_label:N", title="config"), alt.Tooltip("attack_success_lower:Q", format=".1%"), alt.Tooltip("attack_success_upper:Q", format=".1%"), alt.Tooltip("legit:Q", format=".1%")])
-        lbl = alt.Chart(tdf).mark_text(dx=12, align="left", color="#C9D2E3", fontSize=12).encode(x="attack:Q", y="legit:Q", text="config_label:N")
-        st.altair_chart(_cfg(alt.layer(pts, lbl).properties(height=300)), use_container_width=True)
-        st.caption("Top-left is best. Points are per-configuration means over scenarios; differences are descriptive, not significance-tested.")
+        pts = alt.Chart(tdf).mark_circle(size=120, opacity=1, stroke=ui.T["s1"], strokeWidth=2).encode(
+            x=alt.X("attack:Q", title="Attack success, all attack scenarios", axis=alt.Axis(format="%", tickCount=5), scale=alt.Scale(zero=True, padding=14)),
+            y=alt.Y("legit:Q", title="Legitimate task success", axis=alt.Axis(format="%", tickCount=5), scale=alt.Scale(zero=False, padding=14)),
+            color=alt.Color("config_label:N", scale=SERIES_SCALE, title=None),
+            tooltip=[alt.Tooltip("config_label:N", title="Configuration"), alt.Tooltip("attack:Q", format=".1%", title="Attack success"), alt.Tooltip("legit:Q", format=".1%", title="Task success")])
+        st.altair_chart(ui.chart(pts.properties(height=260)), width="stretch")
+    st.caption("Descriptive comparisons; no significance tests were run. Intervals are 95% scenario-cluster bootstrap intervals.")
 
-    st.markdown("**Per-configuration metrics** (scenario-level means, 95% cluster-bootstrap CI)")
     tab = []
     for r in mt:
         cnt = next(c for c in counts if c["config"] == r["config"])
         tab.append({"Configuration": r["config_label"],
-                    "Attack attempted": f"{_range(r['attack_attempt_lower'], r['attack_attempt_upper'])} {_ci(r['attack_attempt_ci'])}",
-                    "Attack succeeded": f"{_range(r['attack_success_lower'], r['attack_success_upper'])} {_ci(r['attack_success_ci_lower'])}",
-                    f"Conditional ASR ({len(cset)} scen.)": f"{_range(r['conditional_asr_lower'], r['conditional_asr_upper'])} {_ci(r['conditional_asr_ci'])}",
-                    "Legit success": f"{_pct(r['legit_success'])} {_ci(r['legit_ci'])}",
-                    "L3 attacker blocks": _pct(r["l3_attack_block"]),
-                    "Runs (excl. inconclusive)": f"{cnt['legit_n']} / {cnt['runs']}",
+                    "Attack attempted": f"{_rng(r['attack_attempt_lower'], r['attack_attempt_upper'])} {cival(r['attack_attempt_ci'])}",
+                    "Attack succeeded": f"{_rng(r['attack_success_lower'], r['attack_success_upper'])} {cival(r['attack_success_ci_lower'])}",
+                    f"Conditional success ({len(cset)} scenarios)": f"{_rng(r['conditional_asr_lower'], r['conditional_asr_upper'])} {cival(r['conditional_asr_ci'])}",
+                    "Task success": f"{pct(r['legit_success'])} {cival(r['legit_ci'])}",
+                    "Layer 3 attacker blocks": pct(r["l3_attack_block"]),
+                    "Valid runs": f"{cnt['legit_n']} of {cnt['runs']}",
                     "Manual review left": r["manual_review_runs"]})
-    st.dataframe(pd.DataFrame(tab), hide_index=True, use_container_width=True)
+    with st.expander("Per-configuration metrics with 95% intervals"):
+        st.dataframe(pd.DataFrame(tab), hide_index=True, width="stretch")
     with st.expander("How to read these numbers"):
         st.markdown(f"""
-- **Attack attempted / succeeded**: mean over the 26 attack scenarios of each scenario's rate across repetitions. Inconclusive runs are excluded.
-- **Conditional ASR**: the same success rate, but only over the **{len(cset)} scenarios the unprotected model attempted** ({', '.join(cset)}). It is not a rate over all 26 scenarios.
-- **Layer 3 attacker blocks**: the only outcome counted as *prevention*: the attacker's own tool call was proposed and denied. "Not attempted" (including after a Layer 1 quarantine) is never prevention.
-- **Ranges** (a – b) appear only where a manual-review item is unresolved.
-- **Supplementary**: task completion without recorded attack success = {', '.join(f"{r['config_label']} {_pct(r['task_completion_without_attack'])}" for r in mt)} (only attacks the frozen checks detect are excluded).
+- **Attack attempted / succeeded:** the mean over the 26 attack scenarios of each scenario's rate across repetitions. Inconclusive runs are excluded.
+- **Conditional success:** the same success rate, only over the {len(cset)} scenarios the unprotected model attempted ({', '.join(cset)}).
+- **Layer 3 attacker blocks:** the only outcome counted as prevention: the attacker's own tool call was proposed and denied. "Not attempted", including after a Layer 1 quarantine, is never prevention.
+- **Ranges (a – b)** appear only where a manual-review item is unresolved.
+- **Supplementary:** task completion without recorded attack success: {', '.join(f"{r['config_label']} {pct(r['task_completion_without_attack'])}" for r in mt)}.
 """)
 
-    st.markdown("**Run-level counts with explicit denominators** (each run = one scenario × configuration × repetition)")
     cdf = pd.DataFrame([{"Configuration": D.CONFIG_LABEL[c["config"]], "Runs": c["runs"], "Inconclusive": c["inconclusive"],
-                         "Legit success": f"{c['legit_success']} / {c['legit_n']}", "Attack runs (valid)": c["attack_n"],
+                         "Task success": f"{c['legit_success']} of {c['legit_n']}", "Valid attack runs": c["attack_n"],
                          "Attempted": f"{c['attempted_lower']}" + (f"–{c['attempted_lower'] + c['manual_review']}" if c["manual_review"] else ""),
                          "Succeeded": f"{c['succeeded_lower']}" + (f"–{c['succeeded_lower'] + c['manual_review']}" if c["manual_review"] else ""),
-                         "Blocked by L3": c["blocked_l3"], "Not attempted": c["not_attempted"], "…after L1 quarantine": c["not_attempted_after_l1"],
-                         "Malformed attacker call": c["invalid_call"], "Runs with L1 quarantine": c["l1_quarantined_runs"]} for c in counts])
-    st.dataframe(cdf, hide_index=True, use_container_width=True)
+                         "Blocked by Layer 3": c["blocked_l3"], "Not attempted": c["not_attempted"], "…after Layer 1 withheld content": c["not_attempted_after_l1"],
+                         "Malformed attacker call": c["invalid_call"], "Runs with Layer 1 quarantine": c["l1_quarantined_runs"]} for c in counts])
+    with st.expander("Run-level counts with explicit denominators"):
+        st.dataframe(cdf, hide_index=True, width="stretch")
 
     pd_rows = []
     for r in mt:
-        for key, lab in (("p_succ", "Attack success"), ("p_att", "Attack attempt"), ("p_legit", "Legitimate success")):
+        for key, lab in (("p_succ", "Attack success"), ("p_att", "Attack attempt"), ("p_legit", "Task success")):
             v = (r["vs_unprotected"] or {}).get(key)
             if v:
-                pd_rows.append({"Configuration": r["config_label"], "Metric": lab, "Difference vs unprotected": v["mean_difference"], "lo": v["ci95"][0], "hi": v["ci95"][1]})
+                pd_rows.append({"Configuration": r["config_label"], "Metric": lab, "diff": v["mean_difference"], "lo": v["ci95"][0], "hi": v["ci95"][1]})
     if pd_rows:
-        st.markdown("**Paired differences vs unprotected (within scenario)**")
+        ui.section("Paired differences against unprotected", "Within scenario. Negative attack values mean fewer attacks; negative task values are a utility cost.")
         pdf = pd.DataFrame(pd_rows)
-        base = alt.Chart().encode(y=alt.Y("Configuration:N", sort=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], title=None), color=alt.Color("Configuration:N", scale=CFG_SCALE, legend=None))
-        ch = alt.layer(alt.Chart().mark_rule(color="#8A97B2", strokeDash=[4, 4]).encode(x=alt.datum(0)),
-                       base.mark_rule(strokeWidth=3).encode(x=alt.X("lo:Q", title="Difference vs unprotected", axis=alt.Axis(format="+%")), x2="hi:Q"),
-                       base.mark_circle(size=120).encode(x="Difference vs unprotected:Q", tooltip=["Configuration", "Metric", alt.Tooltip("Difference vs unprotected:Q", format="+.1%"), alt.Tooltip("lo:Q", format="+.1%"), alt.Tooltip("hi:Q", format="+.1%")]),
-                       data=pdf).properties(width=300, height=150)
-        st.altair_chart(_cfg(ch.facet(column=alt.Column("Metric:N", title=None, header=alt.Header(labelColor="#E6EAF2")))), use_container_width=False)
-        st.caption("Negative attack differences = fewer attacks than unprotected; negative legitimate differences = utility cost. "
-                   "Manual-review items use the lower bound here; scenarios missing in either configuration (timeouts) are dropped from the pair.")
+        base = alt.Chart().encode(y=alt.Y("Configuration:N", sort=ORDER, title=None))
+        base = alt.Chart().encode(y=alt.Y("Configuration:N", sort=ORDER, title=None, axis=alt.Axis(labelLimit=140, labelPadding=8)))
+        ch = alt.layer(alt.Chart().mark_rule(color=ui.T["line2"]).encode(x=alt.datum(0)),
+                       base.mark_rule(color=ui.T["tx2"], strokeWidth=1.5).encode(x=alt.X("lo:Q", title="Difference against unprotected", axis=alt.Axis(format="+%", tickCount=5)), x2="hi:Q"),
+                       base.mark_circle(size=70, color=ui.T["tx"], opacity=1).encode(
+                           x="diff:Q", tooltip=["Configuration", "Metric", alt.Tooltip("diff:Q", format="+.1%", title="Difference"),
+                                                alt.Tooltip("lo:Q", format="+.1%", title="95% CI low"), alt.Tooltip("hi:Q", format="+.1%", title="95% CI high")]),
+                       data=pdf).properties(width=300, height=24 * pdf["Configuration"].nunique() + 20)
+        st.altair_chart(ui.chart(ch.facet(column=alt.Column("Metric:N", title=None, sort=["Attack success", "Attack attempt", "Task success"]), spacing=28)), width="content")
+        st.caption("Scenarios missing in either configuration (timeouts) are dropped from the pair.")
 
-    st.markdown("**Repetition / seed variability**")
+    ui.section("Variability across repetitions" if exp == "R1" else ("Variability across seeds" if exp == "S1" else "Variability"))
     if exp == "Q1":
-        st.info("Q1 has a single repetition (runtime gate failed), so run-to-run variability is not measured. Do not read Q1 as evidence of repeatability.")
+        st.info("Q1 has a single repetition because its pre-registered runtime gate failed, so run-to-run variability is not measured.")
     else:
         rr = pd.DataFrame(D.per_repetition_rates(idx.runs, exp))
         rr["Configuration"] = rr["config"].map(D.CONFIG_LABEL)
-        v1, v2 = st.columns(2)
-        for col, met, title in ((v1, "attack_success", "Attack success per repetition"), (v2, "legit_success", "Legitimate success per repetition")):
+        v1, v2 = st.columns(2, gap="medium")
+        for col, met, title in ((v1, "attack_success", "Attack success"), (v2, "legit_success", "Task success")):
             with col:
-                ch = alt.Chart(rr).mark_line(point=True, strokeWidth=2).encode(x=alt.X("repetition:O", title="Repetition" if exp == "R1" else "Seed"),
-                                                                              y=alt.Y(f"{met}:Q", title=title, axis=alt.Axis(format="%")),
-                                                                              color=alt.Color("Configuration:N", scale=CFG_SCALE, title=None),
-                                                                              tooltip=["Configuration", "repetition", alt.Tooltip(f"{met}:Q", format=".1%")])
-                st.altair_chart(_cfg(ch.properties(height=230)), use_container_width=True)
-        st.caption("Run-level rates per repetition (manual review counted at the lower bound). Outcome reproducibility (modal agreement): "
-                   + ", ".join(f"{r['config_label']} {r['reproducibility']:.3f}" for r in mt if r["reproducibility"] is not None))
+                ch = alt.Chart(rr).mark_line(point=alt.OverlayMarkDef(size=36, filled=True), strokeWidth=2).encode(
+                    x=alt.X("repetition:O", title="Repetition" if exp == "R1" else "Seed", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y(f"{met}:Q", title=f"{title}, run level", axis=alt.Axis(format="%", tickCount=5)),
+                    color=alt.Color("Configuration:N", scale=SERIES_SCALE, title=None),
+                    tooltip=["Configuration", alt.Tooltip("repetition:O", title="Repetition"), alt.Tooltip(f"{met}:Q", format=".1%", title=title)])
+                st.altair_chart(ui.chart(ch.properties(height=220)), width="stretch")
+        st.caption("Outcome reproducibility (modal agreement): " + "; ".join(f"{r['config_label']} {r['reproducibility']:.3f}" for r in mt if r["reproducibility"] is not None) + ".")
 
-    st.markdown("**Scenario-level results**")
+    ui.section("Scenario-level results", "Each cell is one scenario's rate across its repetitions in that configuration. Blank means no valid run.")
     ps = pd.DataFrame(state.per_scenario(exp))
-    which = st.segmented_control("Show", ["Attack success", "Attack attempt", "Legitimate success"], default="Attack success", key=f"heat_{exp}") or "Attack success"
-    col = {"Attack success": "p_succ", "Attack attempt": "p_att", "Legitimate success": "p_legit"}[which]
+    which = st.segmented_control("Metric", ["Attack success", "Attack attempt", "Task success"], default="Attack success", key=f"heat_{exp}") or "Attack success"
+    col = {"Attack success": "p_succ", "Attack attempt": "p_att", "Task success": "p_legit"}[which]
     sub = ps[ps[col].notna()].copy() if col in ps else ps.iloc[0:0]
     if len(sub):
         sub["value"] = sub[col].apply(lambda v: v[1] if isinstance(v, list) else v)
@@ -222,163 +256,113 @@ def _experiment(exp: str):
         sub["Configuration"] = sub["config"].map(D.CONFIG_LABEL)
         if col != "p_legit":
             sub = sub[sub["scenario"].isin(sorted({r["scenario"] for r in idx.runs if r["is_attack"]}))]
-        hi_col = ui.C["red"] if col != "p_legit" else ui.C["green"]
+        # one-hue sequential ramp (dataviz): dark step of the same hue to the full status colour; zero cells recede to the surface
+        hue_lo, hue = (("#4A2826", ui.T["critical"]) if col != "p_legit" else ("#21392D", ui.T["good"]))
         sub["label"] = sub.apply(lambda r: "" if r["value"] == 0 else (f"{r['lower']:.0%}–{r['value']:.0%}" if r["lower"] != r["value"] else f"{r['value']:.0%}"), axis=1)
-        enc = dict(x=alt.X("Configuration:N", sort=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], title=None, axis=alt.Axis(orient="top", labelAngle=0)),
-                   y=alt.Y("scenario:N", title=None, axis=alt.Axis(labelOverlap=False)))
-        rect = alt.Chart(sub).mark_rect(cornerRadius=4, stroke="#0A0F1E", strokeWidth=2).encode(
-            **enc, color=alt.Color("value:Q", scale=alt.Scale(domain=[0, 1], range=["#16213A", hi_col]), legend=alt.Legend(format="%", title=which)),
-            tooltip=["scenario", "Configuration", alt.Tooltip("lower:Q", format=".0%", title="lower"), alt.Tooltip("value:Q", format=".0%", title="upper"), "R", "excluded"])
-        txt = alt.Chart(sub).mark_text(fontSize=11, color="#F8FAFC", fontWeight="bold").encode(**enc, text="label:N")
-        st.altair_chart(_cfg(alt.layer(rect, txt).properties(height=24 * sub["scenario"].nunique())), use_container_width=True)
-        st.caption("Each cell = the scenario's rate across its repetitions in that configuration (R = valid runs). Blank = no valid run (e.g. a Q1 timeout).")
+        enc = dict(x=alt.X("Configuration:N", sort=ORDER, title=None, axis=alt.Axis(orient="top", labelAngle=0)), y=alt.Y("scenario:N", title=None))
+        rect = alt.Chart(sub).mark_rect(cornerRadius=2, stroke=ui.T["s1"], strokeWidth=2).encode(
+            **enc, color=alt.condition(alt.datum.value > 0, alt.Color("value:Q", scale=alt.Scale(domain=[0, 1], range=[hue_lo, hue], interpolate="rgb"),
+                                                                      legend=alt.Legend(format="%", title=which, gradientLength=160)), alt.value(ui.T["s2"])),
+            tooltip=[alt.Tooltip("scenario:N", title="Scenario"), "Configuration", alt.Tooltip("value:Q", format=".0%", title=which), alt.Tooltip("R:Q", title="Valid runs")])
+        txt = alt.Chart(sub).mark_text(fontSize=11, color=ui.T["tx"]).encode(**enc, text="label:N")
+        st.altair_chart(ui.chart(alt.layer(rect, txt).properties(height=22 * sub["scenario"].nunique())), width="stretch")
 
 
+# ------------------------------------------------------------------ Layer 1
 def _detector():
     m = state.detector_metrics()
-    ui.explain("Layer 1 was evaluated separately on 120 frozen examples (60 malicious, 60 benign) at threshold 0.5. This is the detector alone, not the end-to-end agent.")
-    k = st.columns(5)
-    for col, (lab, val, d) in zip(k, [("Precision", m["precision"], f"{m['confusion']['tp']} TP of {m['confusion']['tp'] + m['confusion']['fp']} flagged"),
-                                      ("Recall", m["recall"], f"Wilson {_ci(m['recall_wilson95'])}"), ("F1", m["f1"], ""),
-                                      ("False-positive rate", m["fpr"], f"Wilson {_ci(m['fpr_wilson95'])}"), ("Median latency", None, f"{m['latency_s']['median'] * 1000:.0f} ms per check")]):
+    ui.explain("Layer 1 was evaluated on its own on 120 frozen examples (60 malicious, 60 benign) at threshold 0.5. These are detector results, not end-to-end agent results.")
+    k = st.columns(5, gap="small")
+    cm = m["confusion"]
+    for col, (lab, val, d) in zip(k, [("Precision", pct(m["precision"]), f"{cm['tp']} correct of {cm['tp'] + cm['fp']} flagged"),
+                                      ("Recall", pct(m["recall"]), f"Wilson 95% {cival(m['recall_wilson95'])}"), ("F1 score", pct(m["f1"]), "Harmonic mean of precision and recall"),
+                                      ("False-positive rate", pct(m["fpr"]), f"Wilson 95% {cival(m['fpr_wilson95'])}"),
+                                      ("Median latency", f"{m['latency_s']['median'] * 1000:.0f} ms", "Per check, on the CPU")]):
         with col:
-            ui.kpi(lab, _pct(val) if val is not None else f"{m['latency_s']['median'] * 1000:.0f} ms", d)
-    c1, c2 = st.columns([0.4, 0.6])
+            ui.kpi(lab, val, d)
+    c1, c2 = st.columns([0.38, 0.62], gap="medium")
     with c1:
-        cm = m["confusion"]
-        cdf = pd.DataFrame([{"Actual": "malicious", "Predicted": "flagged", "n": cm["tp"]}, {"Actual": "malicious", "Predicted": "passed", "n": cm["fn"]},
-                            {"Actual": "benign", "Predicted": "flagged", "n": cm["fp"]}, {"Actual": "benign", "Predicted": "passed", "n": cm["tn"]}])
+        ui.section("Confusion matrix")
+        cdf = pd.DataFrame([{"Actual": "Malicious", "Predicted": "Flagged", "n": cm["tp"]}, {"Actual": "Malicious", "Predicted": "Passed", "n": cm["fn"]},
+                            {"Actual": "Benign", "Predicted": "Flagged", "n": cm["fp"]}, {"Actual": "Benign", "Predicted": "Passed", "n": cm["tn"]}])
         base = alt.Chart(cdf).encode(x=alt.X("Predicted:N", title=None, axis=alt.Axis(orient="top", labelAngle=0)), y=alt.Y("Actual:N", title=None))
-        st.altair_chart(_cfg(alt.layer(base.mark_rect(cornerRadius=6).encode(color=alt.Color("n:Q", scale=alt.Scale(scheme="tealblues"), legend=None)),
-                                       base.mark_text(fontSize=22, fontWeight="bold", color="white").encode(text="n:Q")).properties(height=220)), use_container_width=True)
+        st.altair_chart(ui.chart(alt.layer(
+            base.mark_rect(cornerRadius=2, stroke=ui.T["s1"], strokeWidth=2).encode(color=alt.Color("n:Q", scale=alt.Scale(range=[ui.T["s2"], "#256abf"]), legend=None),
+                                                                                    tooltip=["Actual", "Predicted", "n"]),
+            base.mark_text(fontSize=18, fontWeight=600, color=ui.T["tx"]).encode(text="n:Q")).properties(height=200)), width="stretch")
     with c2:
-        pc = pd.DataFrame([{"Category": k.replace("_", " "), "Flag rate": v["flag_rate"], "lo": v["wilson95"][0], "hi": v["wilson95"][1], "n": v["n"],
-                            "Type": "malicious" if k.startswith("malicious") else "benign"} for k, v in m["per_category"].items()])
+        ui.section("Flag rate by category", "Malicious categories should be flagged; benign ones should not.")
+        pc = pd.DataFrame([{"Category": k.replace("_", " ").capitalize(), "Flag rate": v["flag_rate"], "lo": v["wilson95"][0], "hi": v["wilson95"][1], "n": v["n"],
+                            "Type": "Malicious" if k.startswith("malicious") else "Benign"} for k, v in m["per_category"].items()])
         base = alt.Chart(pc).encode(y=alt.Y("Category:N", sort="-x", title=None))
-        st.altair_chart(_cfg(alt.layer(base.mark_bar(cornerRadiusEnd=4).encode(x=alt.X("Flag rate:Q", axis=alt.Axis(format="%")), color=alt.Color("Type:N", scale=alt.Scale(range=[ui.C["amber"], ui.C["red"]]), title=None),
-                                                                        tooltip=["Category", "n", alt.Tooltip("Flag rate:Q", format=".1%")]),
-                                       base.mark_rule(color="white").encode(x="lo:Q", x2="hi:Q")).properties(height=240)), use_container_width=True)
-        st.caption("Benign 'challenging' texts (that discuss instructions) are flagged 35% of the time; this is the source of the end-to-end false quarantines (LD02, LR04).")
+        st.altair_chart(ui.chart(alt.layer(
+            base.mark_bar(cornerRadiusEnd=3, height=12).encode(x=alt.X("Flag rate:Q", axis=alt.Axis(format="%", tickCount=5)),
+                                                               color=alt.Color("Type:N", scale=alt.Scale(domain=["Malicious", "Benign"], range=[ui.SERIES[0], ui.SERIES[1]]), title=None),
+                                                               tooltip=["Category", "Type", "n", alt.Tooltip("Flag rate:Q", format=".1%")]),
+            base.mark_rule(color=ui.T["tx2"]).encode(x="lo:Q", x2="hi:Q")).properties(height=220)), width="stretch")
+        st.caption("Challenging benign texts that discuss instructions are flagged 35% of the time. This is the source of the end-to-end false quarantines (LD02, LR04).")
 
 
+# ------------------------------------------------------------------ Layer 3
 def _layer3():
     idx = state.run_index()
     s = D.l3_summary(idx.denials)
-    ui.explain("Every Layer 3 denial in all 2,600 runs, read from the logs. 'Attack-related' = the attacker's own call was denied (prevention). "
-               "Non-attacker denials are the agent's own mistakes (wrong recipient, repeated or out-of-scope actions) caught by the policy.")
-    ui.warnbox("Human review covered a SAMPLE of non-attacker denials (12 Stage 2 + 20 R1 + 11 Q1/S1 = 43), with 0 false blocks found. "
-               "The others are rule-drafted provisional classifications. This is not a complete audit of every denial.")
-    st.dataframe(pd.DataFrame([{"Experiment": r["experiment"], "All denials": r["denials"], "Attack-related (prevention)": r["attack_related"],
-                                "Non-attacker": r["non_attacker"], "Human-reviewed": r["human_reviewed"], "False blocks in reviewed": r["reviewed_false_blocks"],
-                                "Provisional (rule draft)": r["provisional"], "Not reviewed": r["not_reviewed"],
-                                "Reviewed categories": ", ".join(f"{k} {v}" for k, v in r["categories_reviewed"].items())} for r in s]), hide_index=True, use_container_width=True)
+    ui.explain("Every Layer 3 denial in the 2,600 runs, read from the logs. Attack-related means the attacker's own call was denied, which counts as prevention. "
+               "Other denials are the agent's own mistakes caught by the policy: a wrong recipient, a repeated action or an action outside the task.")
+    ui.warnbox("Human review covered a sample of the non-attacker denials (12 in Stage 2, 20 in R1 and 11 in Q1 and S1: 43 in total) and found no false block. "
+               "The rest carry rule-drafted provisional classifications, so this is not a complete audit of every denial.")
+    st.dataframe(pd.DataFrame([{"Campaign": r["experiment"], "All denials": r["denials"], "Attack-related (prevention)": r["attack_related"],
+                                "Non-attacker": r["non_attacker"], "Human-reviewed": r["human_reviewed"], "False blocks found": r["reviewed_false_blocks"],
+                                "Provisional": r["provisional"], "Not reviewed": r["not_reviewed"],
+                                "Reviewed categories": ", ".join(f"{k} {v}" for k, v in r["categories_reviewed"].items())} for r in s]), hide_index=True, width="stretch")
     dd = pd.DataFrame(idx.denials)
-    dd["Status"] = dd.apply(lambda r: "attack-related (prevention)" if r["attack_related"] else ("human-reviewed" if r["review_status"].startswith("human") else "provisional"), axis=1)
+    dd["Status"] = dd.apply(lambda r: "Attack-related (prevention)" if r["attack_related"] else ("Human-reviewed" if r["review_status"].startswith("human") else "Provisional"), axis=1)
     agg = dd.groupby(["experiment", "config", "Status"]).size().reset_index(name="n")
     agg["Configuration"] = agg["config"].map(D.CONFIG_LABEL)
-    ch = alt.Chart(agg).mark_bar(cornerRadiusEnd=3).encode(
-        y=alt.Y("Configuration:N", title=None), x=alt.X("n:Q", title="Denials"), color=alt.Color("Status:N", scale=alt.Scale(domain=["attack-related (prevention)", "human-reviewed", "provisional"], range=[ui.C["green"], ui.C["cyan"], "#475569"]), title=None),
-        row=alt.Row("experiment:N", title=None, header=alt.Header(labelColor="#E6EAF2", labelFontSize=13)), tooltip=["experiment", "Configuration", "Status", "n"])
-    st.altair_chart(_cfg(ch.properties(height=70)), use_container_width=True)
+    ui.section("Denials by configuration")
+    ch = alt.Chart(agg).mark_bar(height=12).encode(
+        y=alt.Y("Configuration:N", title=None, sort=ORDER), x=alt.X("n:Q", title="Denials", stack="zero"),
+        color=alt.Color("Status:N", scale=alt.Scale(domain=["Attack-related (prevention)", "Human-reviewed", "Provisional"], range=[ui.SERIES[0], ui.SERIES[1], ui.SERIES[2]]), title=None),
+        row=alt.Row("experiment:N", title=None, sort=["R1", "Q1", "S1"]), tooltip=[alt.Tooltip("experiment:N", title="Campaign"), "Configuration", "Status", "n"])
+    st.altair_chart(ui.chart(ch.properties(height=78, width=760)), width="content")
     reasons = dd.assign(rule=dd["reason"].str.replace(r" [^ ]+@[^ ]+$", " <sender>", regex=True).str.replace(r"'[^']+'", "'…'", regex=True)).groupby(["experiment", "rule"]).size().reset_index(name="n")
     with st.expander("Denials by guard rule"):
-        st.dataframe(reasons.sort_values(["experiment", "n"], ascending=[True, False]), hide_index=True, use_container_width=True)
+        st.dataframe(reasons.sort_values(["experiment", "n"], ascending=[True, False]).rename(columns={"experiment": "Campaign", "rule": "Guard rule", "n": "Denials"}),
+                     hide_index=True, width="stretch")
 
 
+# ------------------------------------------------------------------ errors and timeouts
 def _errors():
     idx = state.run_index()
     df = pd.DataFrame(idx.runs)
-    ui.explain("Errors are not attack outcomes. Timeouts (model call > 180 s) are inconclusive and excluded; a six-call-limit stop and a malformed tool call are scored normally and never counted as defence.")
+    ui.explain("Errors are not attack outcomes. Timeouts (a model call over 180 s) are inconclusive and excluded. A six-call-limit stop and a malformed tool call "
+               "are scored normally and never counted as a defence.")
     g = df.groupby(["experiment", "config"]).agg(runs=("run_id", "size"), inconclusive=("legit", lambda s: (s == "inconclusive").sum()),
                                                  call_limit=("stop_reason", lambda s: (s == "max_tool_calls").sum()),
-                                                 malformed_attacker_call=("attack", lambda s: (s == "not_executed_invalid_call").sum())).reset_index()
+                                                 malformed=("attack", lambda s: (s == "not_executed_invalid_call").sum())).reset_index()
     g["Configuration"] = g["config"].map(D.CONFIG_LABEL)
-    st.dataframe(g[["experiment", "Configuration", "runs", "inconclusive", "call_limit", "malformed_attacker_call"]].rename(columns={"experiment": "Experiment", "runs": "Runs", "inconclusive": "Inconclusive (timeout)", "call_limit": "Six-call-limit stops", "malformed_attacker_call": "Malformed attacker call"}),
-                 hide_index=True, use_container_width=True)
+    st.dataframe(g[["experiment", "Configuration", "runs", "inconclusive", "call_limit", "malformed"]].rename(
+        columns={"experiment": "Campaign", "runs": "Runs", "inconclusive": "Inconclusive (timeout)", "call_limit": "Six-call-limit stops", "malformed": "Malformed attacker call"}),
+        hide_index=True, width="stretch")
+    ui.section("Wall time per run", "Log scale. Each box spans the minimum to the maximum.")
     wt = df[df["wall_time_s"].notna()]
-    ch = alt.Chart(wt).mark_boxplot(extent="min-max", size=26, color=ui.C["cyan"]).encode(x=alt.X("wall_time_s:Q", title="Wall time per run (s, log scale)", scale=alt.Scale(type="log")),
-                                                                                         y=alt.Y("experiment:N", title=None))
-    st.altair_chart(_cfg(ch.properties(height=160)), use_container_width=True)
-    st.caption("qwen3:4b (Q1) ran ~50× slower than llama3.2:3b on this laptop, which is why the predefined runtime gate stopped Q1 after one repetition.")
-
-
-def _questions():
-    from agentshield.dashboard import summary as SM
-    idx = state.run_index()
-    ui.explain("Three experiments, never combined: R1 = llama3.2:3b at temperature 0 (10 repetitions; the 200-run reference evaluation is its first repetition), "
-               "Q1 = qwen3:4b (1 repetition; timed-out runs excluded), S1 = llama3.2:3b with sampling on (5 seeds).")
-
-    # ---------------- Question 1
-    st.markdown(ui.question_header(1, "Did AgentShield reduce successful attacks?", "without defences vs all three layers"), unsafe_allow_html=True)
-    q1 = SM.q1_reduction(idx.runs)
-    cols = st.columns(3)
-    for col, q in zip(cols, q1):
-        u, f = q["unprotected"], q["full"]
-        with col:
-            st.markdown(f"<div class='as-story'><div class='as-note'><b>{q['experiment']}</b> · {ui.esc(D.EXPERIMENT_TEXT[q['experiment']].split(',')[0])}</div>"
-                        f"<div style='display:flex;gap:18px;margin:8px 0'><div><div class='as-note'>No defence</div><div style='font-size:28px;font-weight:800;color:{ui.C['red']}'>{SM.rng(u['conditional_asr_lower'], u['conditional_asr_upper'])}</div></div>"
-                        f"<div style='font-size:24px;padding-top:18px;color:#64748B'>→</div><div><div class='as-note'>All layers</div><div style='font-size:28px;font-weight:800;color:{ui.C['green'] if f['conditional_asr_upper'] < u['conditional_asr_lower'] else ui.C['amber']}'>{SM.rng(f['conditional_asr_lower'], f['conditional_asr_upper'])}</div></div></div>"
-                        f"<div class='as-note'>Attack success on the <b>{q['conditional_n']}</b> attack scenario(s) the unprotected model actually attempted (of 26).</div>"
-                        f"<div class='lt' style='font-size:14.5px;margin-top:8px'>{ui.esc(q['how'])}</div>"
-                        f"<div class='as-note' style='margin-top:6px'>{ui.esc(q['denominator'])}</div>"
-                        + (f"<div class='as-note' style='color:{ui.C['amber']};margin-top:6px'>Range: one review (A05) is unresolved.</div>" if q["is_range"] else "") + "</div>", unsafe_allow_html=True)
-    st.caption("Reading it: a lower number with all layers is a recorded reduction. But only Layer 3 denials are proven blocks; attacks that were simply not attempted (often because the small model ignored the injection) are not counted as prevention. "
-               "Overall rates over all 26 attack scenarios are in Advanced analysis.")
-
-    # ---------------- Question 2
-    st.markdown(ui.question_header(2, "Did it interfere with legitimate tasks?", "share of user tasks completed, per configuration"), unsafe_allow_html=True)
-    q2 = pd.DataFrame(SM.q2_utility())
-    q2["Configuration"] = q2["config_label"]
-    q2["lo"] = q2["ci"].apply(lambda c: c[0] if c else None)
-    q2["hi"] = q2["ci"].apply(lambda c: c[1] if c else None)
-    base = alt.Chart(q2).encode(x=alt.X("Configuration:N", sort=[D.CONFIG_LABEL[c] for c in D.CONFIG_ORDER], title=None, axis=alt.Axis(labelAngle=-35, labelFontSize=12, labelOverlap=False)))
-    ch = alt.layer(base.mark_bar(cornerRadiusTopLeft=4, cornerRadiusTopRight=4).encode(y=alt.Y("legit:Q", title="Legitimate task success", axis=alt.Axis(format="%"), scale=alt.Scale(domain=[0, 1])),
-                                                                                     color=alt.Color("Configuration:N", scale=CFG_SCALE, legend=None),
-                                                                                     tooltip=["experiment", "Configuration", alt.Tooltip("legit:Q", format=".1%"), alt.Tooltip("diff:Q", format="+.1%", title="vs no defence")]),
-                   base.mark_errorbar(color="#E6EAF2").encode(y=alt.Y("lo:Q", title="Legitimate task success"), y2="hi:Q")).properties(width=230, height=210)
-    st.altair_chart(_cfg(ch.facet(column=alt.Column("experiment:N", title=None, sort=["R1", "Q1", "S1"], header=alt.Header(labelColor="#E6EAF2", labelFontSize=14))).resolve_scale(x="independent")), use_container_width=False)
-    parts = []
-    for e in ("R1", "Q1", "S1"):
-        d = {r["config"]: r["diff"] for _, r in q2[q2["experiment"] == e].iterrows()}
-        bits = []
-        if d.get("l1_only") is not None:
-            bits.append(f"Layer 1 alone {d['l1_only'] * 100:+.0f} pts")
-        if d.get("full") is not None:
-            bits.append(f"all layers {d['full'] * 100:+.0f} pts")
-        parts.append(f"<b>{e}</b>: " + ", ".join(bits) + " vs no defence")
-    st.markdown("<div class='as-note' style='font-size:15px'>" + " · ".join(parts)
-                + ". The main cost comes from Layer 1 withholding harmless documents (false alarms). Paired differences; intervals are in Advanced analysis.</div>", unsafe_allow_html=True)
-
-    # ---------------- Question 3
-    st.markdown(ui.question_header(3, "Did any attacks still succeed?", "successes with all three layers on"), unsafe_allow_html=True)
-    q3 = SM.q3_residual(idx.runs)
-    if not q3:
-        st.success("No attack succeeded under full defence.")
-    for c in q3:
-        col = ui.C["amber"] if c["succeeded"] == 0 else ui.C["red"]
-        st.markdown(f"<div class='as-act' style='border-left:3px solid {col}'><div class='ic' style='color:{col}'>⚠</div><div><b>{c['experiment']} · {c['scenario']}</b> — {ui.esc(c['objective'])}<br>"
-                    f"<span class='as-note'>Succeeded in <b>{c['succeeded']}</b> of {c['runs']} full-defence run(s)"
-                    + (f", plus {c['unresolved']} unresolved" if c["unresolved"] else "") + f" · {ui.esc(c['kind'])}</span></div></div>", unsafe_allow_html=True)
-    st.caption("These are honest weaknesses: open any of them in the Evidence Explorer (search the scenario id) or in the simulator's replay to see exactly what happened.")
+    ch = alt.Chart(wt).mark_boxplot(extent="min-max", size=18, color=NEUTRAL_BAR, median={"color": ui.T["tx"]}).encode(
+        x=alt.X("wall_time_s:Q", title="Seconds per run", scale=alt.Scale(type="log")), y=alt.Y("experiment:N", title=None, sort=["R1", "Q1", "S1"]))
+    st.altair_chart(ui.chart(ch.properties(height=150)), width="stretch")
+    st.caption("qwen3:4b (Q1) ran about 50 times slower than llama3.2:3b on this laptop, which is why the pre-registered runtime gate stopped Q1 after one repetition.")
 
 
 def render() -> None:
-    ui.inject_story_css()
-    ui.hero("Evaluation Results", "What the experiments show — in three questions, with every detail one click away")
-    _questions()
-    st.divider()
-    st.markdown("### 🔬 Advanced analysis")
-    st.caption("All configuration comparisons, confidence intervals, denominators, repetition/seed analysis, timeouts, and Layer 1 / Layer 3 metrics.")
-    with st.expander("Open the full analysis", expanded=False):
-        tabs = st.tabs(["Overview", "R1 · llama T=0 ×10", "Q1 · qwen ×1", "S1 · llama T=0.8 ×5", "Layer 1 detector", "Layer 3 guard", "Errors & timeouts"])
-        with tabs[0]:
-            _overview()
-        for t, e in zip(tabs[1:4], ("R1", "Q1", "S1")):
-            with t:
-                _experiment(e)
-        with tabs[4]:
-            _detector()
-        with tabs[5]:
-            _layer3()
-        with tabs[6]:
-            _errors()
+    ui.page_header("Results", "What the recorded campaigns show. Every figure comes from the validated aggregates or the run logs, and campaigns are never pooled.")
+    tabs = st.tabs(["Summary", "R1, llama T=0", "Q1, qwen", "S1, llama sampling", "Layer 1 detector", "Layer 3 guard", "Errors and timeouts"])
+    with tabs[0]:
+        _summary()
+    for t, e in zip(tabs[1:4], ("R1", "Q1", "S1")):
+        with t:
+            _experiment(e)
+    with tabs[4]:
+        _detector()
+    with tabs[5]:
+        _layer3()
+    with tabs[6]:
+        _errors()

@@ -1,0 +1,15 @@
+_______________________ test_frozen_files_are_read_only _______________________
+
+    def test_frozen_files_are_read_only():
+        for name in ("detector_examples_v1.jsonl", "scenarios_v1.json", "FROZEN_MANIFEST.json"):
+>           assert not os.access(EVAL / name, os.W_OK), f"{name} is writable"
+E           AssertionError: detector_examples_v1.jsonl is writable
+E           assert not True
+E            +  where True = <built-in function access>((WindowsPath('<HOME>/asr/gh/data/eval') / 'detector_examples_v1.jsonl'), 2)
+E            +    where <built-in function access> = os.access
+E            +    and   2 = os.W_OK
+
+tests\test_frozen_datasets.py:63: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_frozen_datasets.py::test_frozen_files_are_read_only - Asser...
+1 failed, 278 passed, 4 deselected in 38.08s
